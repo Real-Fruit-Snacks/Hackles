@@ -45,3 +45,10 @@ Thumbs.db
 # Claude Code
 CLAUDE.md
 .claude/
+
+# Internal development files
+CODE_REVIEW.md
+QUERY_GAP_ANALYSIS.md
+debug_owned.cypher
+test_query.cypher
+test_all_features.sh
