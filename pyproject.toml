@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hackles"
+version = "2.0.0"
+description = "Extract quick wins from BloodHound Community Edition"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Matt"}
+]
+keywords = [
+    "bloodhound",
+    "active-directory",
+    "security",
+    "pentesting",
+    "neo4j",
+    "attack-paths",
+    "adcs",
+    "kerberos"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+dependencies = [
+    "neo4j>=5.0.0",
+    "prettytable>=3.0.0",
+    "pyyaml>=5.0",
+    "rich>=13.0.0",
+    "argcomplete>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Real-Fruit-Snacks/hackles"
+Repository = "https://github.com/Real-Fruit-Snacks/hackles"
+Issues = "https://github.com/Real-Fruit-Snacks/hackles/issues"
+
+[project.scripts]
+hackles = "hackles.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hackles*"]
+
+[tool.setuptools.package-data]
+"hackles.abuse.templates" = ["*.yml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["hackles"]
+omit = ["tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

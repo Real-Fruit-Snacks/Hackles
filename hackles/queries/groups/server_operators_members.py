@@ -1,0 +1,56 @@
+"""Server Operators Members"""
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
+from hackles.queries.base import register_query
+from hackles.display.colors import Severity
+from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.abuse.printer import print_abuse_info
+from hackles.core.utils import extract_domain
+
+if TYPE_CHECKING:
+    from hackles.core.bloodhound import BloodHoundCE
+
+
+@register_query(
+    name="Server Operators Members",
+    category="Dangerous Groups",
+    default=True,
+    severity=Severity.HIGH
+)
+def get_server_operators_members(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+    """Find members of Server Operators group (can modify services on DCs)"""
+    domain_filter = "AND toUpper(m.domain) = toUpper($domain)" if domain else ""
+    params = {"domain": domain} if domain else {}
+
+    query = f"""
+    MATCH (g:Group)
+    WHERE g.objectid ENDS WITH '-549'
+    OPTIONAL MATCH (m)-[:MemberOf*1..]->(g)
+    WHERE (m:User OR m:Computer OR m:Group)
+    {domain_filter}
+    RETURN DISTINCT
+        g.name AS group_name,
+        m.name AS member,
+        CASE WHEN m:User THEN 'User' WHEN m:Computer THEN 'Computer' WHEN m:Group THEN 'Group' ELSE 'Other' END AS member_type,
+        m.enabled AS enabled
+    ORDER BY g.name, m.name
+    """
+    results = bh.run_query(query, params)
+    results = [r for r in results if r.get("member")]
+    result_count = len(results)
+
+    if not print_header("Server Operators Members", severity, result_count):
+        return result_count
+    print_subheader(f"Found {result_count} Server Operators member(s)")
+
+    if results:
+        print_warning("[!] Server Operators can start/stop services on DCs -> code execution as SYSTEM!")
+        print_table(
+            ["Group", "Member", "Type", "Enabled"],
+            [[r["group_name"], r["member"], r["member_type"], r["enabled"]] for r in results]
+        )
+        print_abuse_info("ServerOperators", results, extract_domain(results, domain))
+
+    return result_count

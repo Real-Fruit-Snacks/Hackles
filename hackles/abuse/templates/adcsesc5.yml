@@ -1,0 +1,17 @@
+name: ADCSESC5
+description: ESC5 - PKI Object ACL abuse (GenericAll/WriteDacl on PKI objects)
+commands:
+- '# Enumerate PKI object permissions'
+- certipy find -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -dc-ip <DC_IP> -vulnerable
+- ''
+- '# If you have write access to CA or NTAuthCertificates:'
+- '# Option 1: Add malicious certificate to NTAuthCertificates'
+- '# Option 2: Modify CA security settings'
+- ''
+- '# Using PowerView to check permissions'
+- Get-DomainObjectAcl -SearchBase "CN=Public Key Services,CN=Services,CN=Configuration,DC=<DOMAIN>" | Where-Object {$_.ActiveDirectoryRights -match "GenericAll|WriteDacl|WriteOwner"}
+opsec:
+- PKI configuration changes are sensitive and logged
+- Modifying NTAuthCertificates affects entire forest
+references:
+- https://posts.specterops.io/certified-pre-owned-d95910965cd2

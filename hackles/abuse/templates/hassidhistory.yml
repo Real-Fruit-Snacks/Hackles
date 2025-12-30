@@ -1,0 +1,12 @@
+name: HasSIDHistory
+description: SID History allows access as the historical account
+commands:
+- '# If you control an account with SID History, you inherit that SID''s access'
+- '# The SID in sidhistory grants access to resources owned by the original account'
+- ''
+- '# Verify SID history (PowerShell)'
+- Get-ADUser -Identity '<USER>' -Properties SIDHistory | Select SIDHistory
+- ''
+- '# Use the inherited access normally - no special tools required'
+opsec: []
+references: []

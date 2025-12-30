@@ -1,0 +1,46 @@
+"""ADCS ESC8 (Web Enrollment)"""
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
+from hackles.queries.base import register_query
+from hackles.display.colors import Severity
+from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+
+
+if TYPE_CHECKING:
+    from hackles.core.bloodhound import BloodHoundCE
+
+@register_query(
+    name="ADCS ESC8 (Web Enrollment)",
+    category="ADCS",
+    default=True,
+    severity=Severity.HIGH
+)
+def get_adcs_esc8(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+    """ADCS ESC8 - Web enrollment enabled (NTLM relay to ADCS)"""
+    domain_filter = "AND toUpper(eca.domain) = toUpper($domain)" if domain else ""
+    params = {"domain": domain} if domain else {}
+
+    query = f"""
+    MATCH (eca:EnterpriseCA)
+    WHERE eca.webenrollmentenabled = true
+    {domain_filter}
+    RETURN eca.name AS ca, eca.dnshostname AS host
+    ORDER BY eca.name
+    """
+    results = bh.run_query(query, params)
+    result_count = len(results)
+
+    if not print_header("ADCS ESC8 (Web Enrollment)", severity, result_count):
+        return result_count
+    print_subheader(f"Found {result_count} CA(s) with web enrollment enabled")
+
+    if results:
+        print_warning("[!] NTLM relay to web enrollment endpoint to obtain certificates!")
+        print_table(
+            ["CA Name", "Hostname"],
+            [[r["ca"], r["host"]] for r in results]
+        )
+
+    return result_count

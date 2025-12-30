@@ -1,0 +1,46 @@
+"""ADCS ESC11 (SAN Enabled)"""
+from __future__ import annotations
+
+from typing import Optional, TYPE_CHECKING
+
+from hackles.queries.base import register_query
+from hackles.display.colors import Severity
+from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+
+
+if TYPE_CHECKING:
+    from hackles.core.bloodhound import BloodHoundCE
+
+@register_query(
+    name="ADCS ESC11 (SAN Enabled)",
+    category="ADCS",
+    default=True,
+    severity=Severity.HIGH
+)
+def get_adcs_esc11(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+    """ADCS ESC11 - User-specified SAN enabled on CA"""
+    domain_filter = "AND toUpper(eca.domain) = toUpper($domain)" if domain else ""
+    params = {"domain": domain} if domain else {}
+
+    query = f"""
+    MATCH (eca:EnterpriseCA)
+    WHERE eca.isuserspecifiessanenabled = true
+    {domain_filter}
+    RETURN eca.name AS ca, eca.dnshostname AS host
+    ORDER BY eca.name
+    """
+    results = bh.run_query(query, params)
+    result_count = len(results)
+
+    if not print_header("ADCS ESC11 (User SAN Enabled)", severity, result_count):
+        return result_count
+    print_subheader(f"Found {result_count} CA(s) with user-specified SAN enabled")
+
+    if results:
+        print_warning("[!] CA allows user-specified Subject Alternative Name!")
+        print_table(
+            ["CA Name", "Hostname"],
+            [[r["ca"], r["host"]] for r in results]
+        )
+
+    return result_count

