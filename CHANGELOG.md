@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **JSON/CSV output for `--stats` command**: The `--stats` flag now properly outputs structured data when combined with `--json` or `--csv`:
+  - JSON output includes nested objects for users, computers, groups, and risk metrics
+  - CSV output uses category/metric/value format for easy parsing
+  - Example: `hackles --stats --json` returns `{"domain": "CORP.LOCAL", "users": {...}, "risk": {"score": 40, ...}}`
+
+- **Comprehensive test suite**: 92 automated tests covering all 54 CLI flags with full output logging
+
 - **`--investigate` command**: Comprehensive one-command investigation of any node (user/computer/group):
   - Auto-detects node type and shows relevant information
   - **User investigation**: Properties, group memberships, outbound/inbound attack edges, admin rights, active sessions, path to DA
@@ -47,6 +54,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 
 - **`--members` output**: Now includes Admin column showing `admincount` status, with results sorted by admin status first (admins at top)
+
+### Fixed
+
+- **Cypher double-WHERE syntax errors**: Fixed 3 query files that caused "Invalid input 'WHERE'" errors when using domain filter (`-d`):
+  - `esc6_san_flag.py` - ESC6 ADCS query
+  - `unresolved_sids.py` - Unresolved SIDs ACL query
+  - `logon_scripts_foreign.py` - Logon scripts in trusted domains query
+  - Root cause: `domain_filter = "WHERE ..."` placed after existing WHERE clause; changed to `"AND ..."`
+
+- **JSON output pollution**: Fixed "Risk Score" line appearing before JSON array when using `--json` flag with queries
+  - Added output format check in `domain_stats.py` to suppress non-JSON text
+
+- **Empty output for `--stats --json` and `--stats --csv`**: The `--stats` command now properly outputs data in JSON/CSV format instead of empty output
+  - Previously bypassed the JSON/CSV output handling entirely
 
 ## [0.2.0] - 2025-12-30
 

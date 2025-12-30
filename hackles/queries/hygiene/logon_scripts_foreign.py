@@ -24,13 +24,13 @@ def get_logon_scripts_foreign(bh: BloodHoundCE, domain: Optional[str] = None, se
     If the trusted domain is compromised, attackers can modify the script
     to execute code on machines in the trusting domain.
     """
-    domain_filter = "WHERE toUpper(u.domain) = toUpper($domain)" if domain else ""
+    domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}
 
     query = f"""
     MATCH (u:User)
-    {domain_filter}
     WHERE u.scriptpath IS NOT NULL
+    {domain_filter}
     AND u.scriptpath <> ''
     AND u.enabled = true
     WITH u,

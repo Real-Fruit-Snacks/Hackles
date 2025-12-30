@@ -1,5 +1,6 @@
 """HTML report generation for hackles"""
 import html
+import re
 from datetime import datetime
 from typing import List, Dict, Any
 
@@ -479,8 +480,8 @@ def generate_html_report(results: List[Dict[str, Any]], output_path: str) -> Non
         if count > 0:
             severity_counts[sev] += 1
 
-            # Create anchor ID (escape to prevent XSS in id attribute)
-            anchor_id = html.escape(r['query'], quote=True).lower().replace(' ', '-').replace('/', '-')
+            # Create anchor ID (alphanumeric and hyphens only)
+            anchor_id = re.sub(r'[^a-zA-Z0-9_-]', '', r['query'].lower().replace(' ', '-'))
 
             # Add to TOC
             toc_items.append(
@@ -541,5 +542,8 @@ def generate_html_report(results: List[Dict[str, Any]], output_path: str) -> Non
         findings='\n'.join(findings_html)
     )
 
-    with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(html_output)
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_output)
+    except IOError as e:
+        raise IOError(f"Failed to write HTML report to '{output_path}': {e}") from e

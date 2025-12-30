@@ -116,7 +116,7 @@ def print_node_info(node_props: dict):
     if config.output_format != 'table':
         return
 
-    labels = node_props.pop("_labels", [])
+    labels = node_props.get("_labels", [])
 
     print(f"    {Colors.BOLD}Labels:{Colors.END} {', '.join(labels)}")
     print(f"    {Colors.BOLD}Properties:{Colors.END}")
@@ -130,7 +130,7 @@ def print_node_info(node_props: dict):
         if key in node_props:
             sorted_keys.append(key)
     for key in sorted(node_props.keys()):
-        if key not in sorted_keys:
+        if key not in sorted_keys and key != "_labels":
             sorted_keys.append(key)
 
     for key in sorted_keys:

@@ -24,7 +24,7 @@ def get_unresolved_sids(bh: BloodHoundCE, domain: Optional[str] = None, severity
     These orphaned permissions could be exploited if the SID is recreated or
     if the SID belongs to a deleted account from a trusted domain.
     """
-    domain_filter = "WHERE toUpper(target.domain) = toUpper($domain)" if domain else ""
+    domain_filter = "AND toUpper(target.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}
 
     # Look for principals that only have a SID-like name (S-1-5-21-...)

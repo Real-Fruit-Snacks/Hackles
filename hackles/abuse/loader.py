@@ -1,4 +1,5 @@
 """YAML abuse template loader"""
+import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -26,16 +27,13 @@ def load_abuse_templates(templates_dir: Optional[Path] = None) -> Dict[str, Any]
         templates_dir = Path(__file__).parent / "templates"
 
     if not templates_dir.exists():
-        _loaded = True
         return ABUSE_INFO
 
     try:
         import yaml
     except ImportError:
-        import sys
         print("[!] Warning: pyyaml not installed - abuse templates disabled", file=sys.stderr)
         print("    Install with: pip install pyyaml", file=sys.stderr)
-        _loaded = True
         return ABUSE_INFO
 
     for yaml_file in sorted(templates_dir.glob("*.yml")):
@@ -45,7 +43,6 @@ def load_abuse_templates(templates_dir: Optional[Path] = None) -> Dict[str, Any]
                 if data and 'name' in data:
                     # Validate required fields
                     if 'commands' not in data or not data['commands']:
-                        import sys
                         print(f"[!] Warning: {yaml_file.name} missing 'commands' field", file=sys.stderr)
                         continue
                     # Store by name for lookup
@@ -57,10 +54,9 @@ def load_abuse_templates(templates_dir: Optional[Path] = None) -> Dict[str, Any]
                     }
         except Exception as e:
             # Log malformed files to stderr
-            import sys
             print(f"[!] Warning: Failed to load {yaml_file.name}: {e}", file=sys.stderr)
 
-    _loaded = True  # Prevent re-parsing on subsequent calls
+    _loaded = True  # Only mark loaded after successful completion
     return ABUSE_INFO
 
 

@@ -27,7 +27,7 @@ def get_never_changed_password(bh: BloodHoundCE, domain: Optional[str] = None, s
     query = f"""
     MATCH (u:User {{enabled: true}})
     WHERE (u.pwdlastset = u.whencreated OR u.pwdlastset = 0 OR u.pwdlastset IS NULL)
-      AND u.lastlogon > (datetime().epochseconds - (30 * 86400))
+      AND u.lastlogon > (datetime().epochSeconds - (30 * 86400))
     {domain_filter}
     RETURN u.name AS user, u.whencreated AS created, u.lastlogon AS lastlogon
     ORDER BY u.whencreated ASC

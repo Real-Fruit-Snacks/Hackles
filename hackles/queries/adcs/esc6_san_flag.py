@@ -27,7 +27,7 @@ def get_esc6_san_flag(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     allowing requesters to specify arbitrary SANs in certificate requests.
     This enables domain privilege escalation via any template that allows enrollment.
     """
-    domain_filter = "WHERE toUpper(n.domain) = toUpper($domain)" if domain else ""
+    domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}
 
     # ESC6a - direct enrollment to CA with SAN flag

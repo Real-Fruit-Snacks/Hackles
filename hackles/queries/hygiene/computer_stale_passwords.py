@@ -27,7 +27,7 @@ def get_computer_stale_passwords(bh: BloodHoundCE, domain: Optional[str] = None,
 
     query = f"""
     MATCH (c:Computer {{enabled: true}})
-    WHERE c.pwdlastset < (datetime().epochseconds - ({config.stale_days} * 86400))
+    WHERE c.pwdlastset < (datetime().epochSeconds - ({config.stale_days} * 86400))
       AND c.pwdlastset > 0
     {domain_filter}
     RETURN c.name AS computer, c.pwdlastset AS pwdlastset

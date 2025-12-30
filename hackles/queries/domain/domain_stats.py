@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Colors, Severity
 from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.core.config import config
 
 
 if TYPE_CHECKING:
@@ -96,8 +97,9 @@ def get_domain_stats(bh: BloodHoundCE, domain: Optional[str] = None, severity: S
     color = rating_colors.get(rating, Colors.END)
 
     print_subheader("Risk Assessment")
-    print(f"    Risk Score: {color}{score}/100 ({rating}){Colors.END}")
-    print()
+    if config.output_format == 'table':
+        print(f"    Risk Score: {color}{score}/100 ({rating}){Colors.END}")
+        print()
 
     risk_data = [
         ["Users with path to DA", f"{metrics.get('users_with_path_to_da', 0)} ({metrics.get('pct_users_with_path_to_da', 0)}%)"],

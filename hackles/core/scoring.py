@@ -83,9 +83,10 @@ def calculate_exposure_metrics(bh: BloodHoundCE, domain: Optional[str] = None) -
         metrics["kerberoastable_admins"] = results[0].get("kerberoastable_admins", 0)
 
     # AS-REP roastable users
+    asrep_domain_filter = "WHERE toUpper(u.domain) = toUpper($domain)" if domain else ""
     query = f"""
     MATCH (u:User {{enabled: true, dontreqpreauth: true}})
-    {user_filter}
+    {asrep_domain_filter}
     RETURN count(u) AS asrep_users
     """
     results = bh.run_query(query, params)

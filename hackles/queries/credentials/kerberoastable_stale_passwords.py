@@ -28,7 +28,7 @@ def get_kerberoastable_stale_passwords(bh: BloodHoundCE, domain: Optional[str] =
 
     query = f"""
     MATCH (u:User {{hasspn: true, enabled: true}})
-    WHERE u.pwdlastset < (datetime().epochseconds - (1825 * 86400))
+    WHERE u.pwdlastset < (datetime().epochSeconds - (1825 * 86400))
       AND NOT u.pwdlastset IN [-1.0, 0.0]
       AND NOT u.name STARTS WITH 'KRBTGT'
       {domain_filter}

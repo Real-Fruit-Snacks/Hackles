@@ -46,6 +46,7 @@ from hackles.queries.hygiene.computers_without_laps import get_computers_without
 from hackles.queries.owned.owned_principals import get_owned_principals
 from hackles.queries.domain.high_value_targets import get_high_value_targets
 from hackles.queries.domain.domain_stats import get_domain_stats
+from hackles.core.scoring import calculate_exposure_metrics, calculate_risk_score, get_risk_rating
 
 
 def init_owned_cache(bh: BloodHoundCE) -> None:
@@ -63,6 +64,81 @@ def init_owned_cache(bh: BloodHoundCE) -> None:
         if config.debug_mode:
             print(f"{Colors.WARNING}[!] Warning: Could not initialize owned cache: {e}{Colors.END}")
         config.owned_cache = {}
+
+
+def collect_stats_data(bh: BloodHoundCE, domain: Optional[str] = None) -> Dict[str, Any]:
+    """Collect domain statistics as a dictionary for JSON/CSV output."""
+    domain_filter = "WHERE toUpper(n.domain) = toUpper($domain)" if domain else ""
+    params = {"domain": domain} if domain else {}
+
+    stats = {"domain": domain or "all", "users": {}, "computers": {}, "groups": 0, "risk": {}}
+
+    # User stats
+    query = f"""
+    MATCH (n:User) {domain_filter}
+    RETURN
+        count(n) AS total,
+        sum(CASE WHEN n.enabled = true THEN 1 ELSE 0 END) AS enabled,
+        sum(CASE WHEN n.enabled = false THEN 1 ELSE 0 END) AS disabled,
+        sum(CASE WHEN n.pwdneverexpires = true THEN 1 ELSE 0 END) AS pwd_never_expires,
+        sum(CASE WHEN n.passwordnotreqd = true THEN 1 ELSE 0 END) AS pwd_not_required
+    """
+    results = bh.run_query(query, params)
+    if results:
+        r = results[0]
+        stats["users"] = {
+            "total": r["total"],
+            "enabled": r["enabled"],
+            "disabled": r["disabled"],
+            "pwd_never_expires": r["pwd_never_expires"],
+            "pwd_not_required": r["pwd_not_required"]
+        }
+
+    # Computer stats
+    query = f"""
+    MATCH (n:Computer) {domain_filter}
+    RETURN
+        count(n) AS total,
+        sum(CASE WHEN n.enabled = true THEN 1 ELSE 0 END) AS enabled,
+        sum(CASE WHEN n.haslaps = true THEN 1 ELSE 0 END) AS has_laps
+    """
+    results = bh.run_query(query, params)
+    if results:
+        r = results[0]
+        stats["computers"] = {
+            "total": r["total"],
+            "enabled": r["enabled"],
+            "has_laps": r["has_laps"]
+        }
+
+    # Group stats
+    query = f"""
+    MATCH (n:Group) {domain_filter}
+    RETURN count(n) AS total
+    """
+    results = bh.run_query(query, params)
+    if results:
+        stats["groups"] = results[0]["total"]
+
+    # Risk scoring
+    metrics = calculate_exposure_metrics(bh, domain)
+    score = calculate_risk_score(metrics)
+    rating = get_risk_rating(score)
+    stats["risk"] = {
+        "score": score,
+        "rating": rating,
+        "users_with_path_to_da": metrics.get("users_with_path_to_da", 0),
+        "pct_users_with_path_to_da": metrics.get("pct_users_with_path_to_da", 0),
+        "computers_without_laps": metrics.get("computers_without_laps", 0),
+        "pct_computers_without_laps": metrics.get("pct_computers_without_laps", 0),
+        "kerberoastable_admins": metrics.get("kerberoastable_admins", 0),
+        "asrep_roastable": metrics.get("asrep_roastable", 0),
+        "unconstrained_delegation_non_dc": metrics.get("unconstrained_delegation_non_dc", 0),
+        "domain_admin_count": metrics.get("domain_admin_count", 0),
+        "tier_zero_count": metrics.get("tier_zero_count", 0)
+    }
+
+    return stats
 
 
 def list_domains(bh: BloodHoundCE) -> None:
@@ -318,7 +394,23 @@ def main():
 
         # === STATS (early exit) ===
         if args.stats:
-            get_domain_stats(bh, args.domain, Severity.INFO)
+            if config.output_format == 'json':
+                stats = collect_stats_data(bh, args.domain)
+                print(json.dumps(stats, indent=2, default=str))
+            elif config.output_format == 'csv':
+                stats = collect_stats_data(bh, args.domain)
+                writer = csv.writer(sys.stdout)
+                writer.writerow(["category", "metric", "value"])
+                writer.writerow(["domain", "name", stats["domain"]])
+                for key, val in stats["users"].items():
+                    writer.writerow(["users", key, val])
+                for key, val in stats["computers"].items():
+                    writer.writerow(["computers", key, val])
+                writer.writerow(["groups", "total", stats["groups"]])
+                for key, val in stats["risk"].items():
+                    writer.writerow(["risk", key, val])
+            else:
+                get_domain_stats(bh, args.domain, Severity.INFO)
             return
 
         # If only marking ownership (no -a flag), show owned principals and exit
@@ -434,7 +526,7 @@ def main():
                         from hackles.core.utils import extract_domain
 
                         # Get domain from node name
-                        domain = extract_domain([{"name": args.investigate}])
+                        node_domain = extract_domain([{"name": args.investigate}])
 
                         # Group edges by relationship type to avoid duplicate abuse info
                         seen_relationships = set()
@@ -454,7 +546,7 @@ def main():
                             if e["target_type"].lower() == "group":
                                 result["group"] = e["target"]
 
-                            print_abuse_info(rel, [result], domain)
+                            print_abuse_info(rel, [result], node_domain)
 
                 # Inbound edges (who can attack this node)
                 edges_in = bh.get_edges_to(args.investigate)

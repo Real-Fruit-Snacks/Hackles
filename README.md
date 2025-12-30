@@ -6,10 +6,10 @@
 
 > **Extract quick wins from BloodHound Community Edition**
 
-A fast CLI tool for identifying Active Directory attack paths, misconfigurations, and privilege escalation opportunities. **150 security queries** across 13 categories with **58 ready-to-use attack templates**.
+A fast CLI tool for identifying Active Directory attack paths, misconfigurations, and privilege escalation opportunities. **152 security queries** across 13 categories with **58 ready-to-use attack templates**.
 
 ```bash
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a                    # Run all 150 queries
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a                    # Run all 152 queries
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --adcs --privesc      # ADCS + privilege escalation
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html # Generate HTML report
 ```
@@ -98,11 +98,11 @@ register-python-argcomplete --shell fish hackles | source
 | Credentials | 18 | `--privesc` | Kerberoasting, DCSync, shadow creds, service account security |
 | Security Hygiene | 19 | `--hygiene` | LAPS, SMB signing, AdminSDHolder, stale passwords |
 | ADCS | 17 | `--adcs` | ESC1-ESC15, golden certs, ManageCA, enrollment agents |
-| Lateral Movement | 14 | `--lateral` | RDP, DCOM, PSRemote, SQL, sessions |
+| Lateral Movement | 15 | `--lateral` | RDP, DCOM, PSRemote, SQL, sessions, coercion targets |
 | Domain Analysis | 14 | `--basic` | Trusts, functional level, single DC |
 | Owned Principals | 11 | `--owned-queries` | Paths from compromised accounts |
 | Dangerous Groups | 10 | `--groups` | DNSAdmins, Backup Ops, RODC replication |
-| Delegation | 11 | `--delegation` | Constrained, unconstrained, RBCD, delegation chains, S4U2Self attacks |
+| Delegation | 12 | `--delegation` | Constrained, unconstrained, RBCD, delegation chains, S4U2Self, coercion chains |
 | Attack Paths | 6 | `--attack-paths` | Shortest paths, attack chains |
 | Azure/Hybrid | 3 | `--azure` | AAD Connect, hybrid DCSync |
 | Miscellaneous | 3 | `--misc` | Circular groups, duplicate SPNs |
@@ -147,6 +147,7 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --csv > results.cs
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --no-color | tee output.txt
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --progress  # Show progress bar
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --stats --json  # Stats as JSON
 ```
 
 ### Quick Filters
@@ -336,7 +337,7 @@ Plus: Golden Certificate paths, enrollment abuse detection.
 [*] Findings Summary
     CRITICAL: 1 | HIGH: 2 | MEDIUM: 5 | LOW: 3
 
-[+] Analysis completed in 1.23s (150 queries)
+[+] Analysis completed in 1.23s (152 queries)
 ```
 
 Owned principals are marked with `[!]` (yellow for standard, red for admin).

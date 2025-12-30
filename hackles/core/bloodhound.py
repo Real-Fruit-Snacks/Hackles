@@ -418,7 +418,7 @@ class BloodHoundCE:
             query = """
             MATCH (c:Computer) WHERE c.name =~ $pattern
             MATCH (c)-[:HasSession]->(u:User)
-            RETURN c.name AS computer, u.name AS user, u.admincount AS admin, u.enabled AS enabled
+            RETURN c.name AS computer, u.name AS user, COALESCE(u.admincount, false) AS admin, u.enabled AS enabled
             ORDER BY c.name, u.admincount DESC, u.name
             LIMIT 500
             """
@@ -427,7 +427,7 @@ class BloodHoundCE:
             query = """
             MATCH (c:Computer) WHERE toUpper(c.name) = toUpper($name)
             MATCH (c)-[:HasSession]->(u:User)
-            RETURN u.name AS user, u.admincount AS admin, u.enabled AS enabled
+            RETURN u.name AS user, COALESCE(u.admincount, false) AS admin, u.enabled AS enabled
             ORDER BY u.admincount DESC, u.name
             """
             return self.run_query(query, {"name": computer})
@@ -553,9 +553,8 @@ class BloodHoundCE:
 
     def get_all_computers(self, domain: Optional[str] = None) -> list:
         """Get all domain computers with key properties."""
-        domain_filter = ""
-        if domain:
-            domain_filter = f"AND toUpper(c.name) ENDS WITH toUpper('.{domain}')"
+        domain_filter = "AND toUpper(c.name) ENDS WITH toUpper($domain_suffix)" if domain else ""
+        params = {"domain_suffix": f".{domain}"} if domain else {}
 
         query = f"""
         MATCH (c:Computer)
@@ -564,13 +563,12 @@ class BloodHoundCE:
                COALESCE(c.haslaps, false) AS laps, COALESCE(c.unconstraineddelegation, false) AS unconstrained
         ORDER BY c.name
         """
-        return self.run_query(query)
+        return self.run_query(query, params)
 
     def get_all_users(self, domain: Optional[str] = None) -> list:
         """Get all domain users with key properties."""
-        domain_filter = ""
-        if domain:
-            domain_filter = f"AND toUpper(u.name) ENDS WITH toUpper('@{domain}')"
+        domain_filter = "AND toUpper(u.name) ENDS WITH toUpper($domain_suffix)" if domain else ""
+        params = {"domain_suffix": f"@{domain}"} if domain else {}
 
         query = f"""
         MATCH (u:User)
@@ -580,13 +578,12 @@ class BloodHoundCE:
                COALESCE(u.pwdneverexpires, false) AS neverexpires
         ORDER BY u.admincount DESC, u.name
         """
-        return self.run_query(query)
+        return self.run_query(query, params)
 
     def get_all_spns(self, domain: Optional[str] = None) -> list:
         """Get all Service Principal Names for targeting."""
-        domain_filter = ""
-        if domain:
-            domain_filter = f"AND toUpper(u.name) ENDS WITH toUpper('@{domain}')"
+        domain_filter = "AND toUpper(u.name) ENDS WITH toUpper($domain_suffix)" if domain else ""
+        params = {"domain_suffix": f"@{domain}"} if domain else {}
 
         query = f"""
         MATCH (u:User)
@@ -595,16 +592,16 @@ class BloodHoundCE:
         RETURN u.name AS account, spn AS spn, u.enabled AS enabled, COALESCE(u.admincount, false) AS admin
         ORDER BY u.admincount DESC, spn
         """
-        return self.run_query(query)
+        return self.run_query(query, params)
 
     def get_quick_wins(self, domain: Optional[str] = None) -> dict:
         """Get quick win attack paths - lowest effort, highest impact targets.
 
         Returns a dict with categories of quick wins.
         """
-        domain_filter = ""
-        if domain:
-            domain_filter = f"AND (d.name =~ '(?i).*{domain}.*' OR n.domain =~ '(?i).*{domain}.*')"
+        domain_filter_n = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""
+        domain_filter_u = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""
+        params = {"domain": domain} if domain else {}
 
         results = {
             "short_paths_to_da": [],
@@ -616,7 +613,7 @@ class BloodHoundCE:
         # 1. Short paths to Domain Admins (1-2 hops)
         short_paths_query = f"""
         MATCH (n)
-        WHERE n.enabled = true {domain_filter.replace('d.name', 'n.domain')}
+        WHERE n.enabled = true {domain_filter_n}
         MATCH (g:Group)
         WHERE g.objectid ENDS WITH '-512'
         MATCH p = shortestPath((n)-[*1..2]->(g))
@@ -627,13 +624,13 @@ class BloodHoundCE:
         ORDER BY length(p), n.name
         LIMIT 20
         """
-        results["short_paths_to_da"] = self.run_query(short_paths_query)
+        results["short_paths_to_da"] = self.run_query(short_paths_query, params)
 
         # 2. Kerberoastable admins (admin accounts with SPNs)
         kerb_admins_query = f"""
         MATCH (u:User)
         WHERE u.hasspn = true AND u.admincount = true AND u.enabled = true
-        {domain_filter.replace('n.', 'u.').replace('d.name', 'u.domain')}
+        {domain_filter_u}
         OPTIONAL MATCH (u)-[:MemberOf*1..]->(g:Group)
         WHERE g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519'
         RETURN u.name AS account, u.serviceprincipalnames[0] AS spn,
@@ -644,18 +641,18 @@ class BloodHoundCE:
         ORDER BY password_age_days DESC
         LIMIT 10
         """
-        results["kerberoastable_admins"] = self.run_query(kerb_admins_query)
+        results["kerberoastable_admins"] = self.run_query(kerb_admins_query, params)
 
         # 3. AS-REP roastable accounts
         asrep_query = f"""
         MATCH (u:User)
         WHERE u.dontreqpreauth = true AND u.enabled = true
-        {domain_filter.replace('n.', 'u.').replace('d.name', 'u.domain')}
-        RETURN u.name AS account, u.admincount AS admin
+        {domain_filter_u}
+        RETURN u.name AS account, COALESCE(u.admincount, false) AS admin
         ORDER BY u.admincount DESC, u.name
         LIMIT 10
         """
-        results["asrep_roastable"] = self.run_query(asrep_query)
+        results["asrep_roastable"] = self.run_query(asrep_query, params)
 
         # 4. Direct ACL abuse to high-value targets
         acl_query = f"""
@@ -666,11 +663,11 @@ class BloodHoundCE:
              OR 'admin_tier_0' IN target.system_tags)
         AND n.enabled = true
         AND NOT (n.objectid ENDS WITH '-512' OR n.objectid ENDS WITH '-519')
-        {domain_filter.replace('d.name', 'n.domain')}
+        {domain_filter_n}
         RETURN n.name AS principal, type(r) AS permission, target.name AS target
         ORDER BY type(r), n.name
         LIMIT 15
         """
-        results["direct_acl_abuse"] = self.run_query(acl_query)
+        results["direct_acl_abuse"] = self.run_query(acl_query, params)
 
         return results
