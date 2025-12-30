@@ -22,6 +22,8 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
 |---------|-------------|
 | **150 Security Queries** | Privilege escalation, ACL abuse, ADCS (ESC1-ESC15), delegation, lateral movement, service accounts |
 | **58 Abuse Templates** | Copy-paste attack commands with OPSEC notes and BloodHound.py integration |
+| **Node Investigation** | `--investigate USER` shows properties, attack edges, group memberships, paths to DA in one command |
+| **Wildcard Support** | Use `*` patterns in node operations: `--investigate '*.DOMAIN.COM'`, `--sessions '*.DOMAIN.COM'` |
 | **Multiple Outputs** | Table, JSON, CSV, HTML reports |
 | **Severity Filtering** | Focus on CRITICAL/HIGH findings only |
 | **Owned Tracking** | Highlights compromised accounts with `[!]` markers |
@@ -156,27 +158,41 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --no-laps         # C
 
 ### Node Operations
 
+All node operations support `*` wildcards for pattern matching.
+
 ```bash
+# Comprehensive investigation (auto-detects user/computer/group)
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate 'USER@CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate 'USER@CORP.LOCAL' --abuse  # With attack commands
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate 'DC01.CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate '*.CORP.LOCAL'  # Triage view
+
 # Search and explore
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --search '*ADMIN*'
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --info 'USER@CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --info '*.CORP.LOCAL'  # Wildcard
 
 # Path finding
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --path 'USER@CORP.LOCAL' 'DC01.CORP.LOCAL'
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --path-to-da 'USER@CORP.LOCAL'
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --path-to-dc 'USER@CORP.LOCAL'
 
-# Group membership
+# Group membership (includes Admin column, sorted by admin status)
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --members 'DOMAIN ADMINS@CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --members 'DOMAIN *'   # Wildcard
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --memberof 'USER@CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --memberof 'SVC_*'     # Wildcard
 
 # Admin rights and sessions
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --adminto 'DC01.CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --adminto '*.CORP.LOCAL'   # Wildcard
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --adminof 'USER@CORP.LOCAL'
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --sessions 'SERVER01.CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --sessions '*.CORP.LOCAL'  # Wildcard
 
 # Edge exploration
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --edges-from 'USER@CORP.LOCAL'
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --edges-from '*.CORP.LOCAL'        # Wildcard
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --edges-to 'DOMAIN ADMINS@CORP.LOCAL'
 ```
 

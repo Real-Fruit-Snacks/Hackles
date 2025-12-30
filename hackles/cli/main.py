@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Tuple, Optional
 from hackles.cli.parser import create_parser
 from hackles.cli.completion import setup_completion
 from hackles.core.config import config
-from hackles.core.bloodhound import BloodHoundCE
+from hackles.core.bloodhound import BloodHoundCE, _has_wildcard
 from hackles.display.banner import print_banner
 from hackles.display.colors import Colors, Severity
 from hackles.display.tables import (
@@ -324,14 +324,248 @@ def main():
             get_owned_principals(bh, args.domain, Severity.INFO)
             return
 
+        # === INVESTIGATE NODE (early exit) ===
+        if args.investigate:
+            if _has_wildcard(args.investigate):
+                # Wildcard: show triage summary
+                print_header(f"Investigation Triage: {args.investigate}")
+                results = bh.investigate_nodes(args.investigate)
+                if results:
+                    print_subheader(f"Found {len(results)} node(s) - sorted by attack relevance")
+                    rows = []
+                    for r in results:
+                        # Build flags column
+                        flags = []
+                        if r.get("admin"):
+                            flags.append("Admin")
+                        if r.get("unconstrained"):
+                            flags.append("Uncon")
+                        if r.get("laps") is False:
+                            flags.append("NoLAPS")
+                        flags_str = ", ".join(flags) if flags else "-"
+
+                        rows.append([
+                            r["name"],
+                            r["type"],
+                            r.get("enabled", ""),
+                            flags_str,
+                            r.get("outbound_edges", 0),
+                            r.get("inbound_edges", 0)
+                        ])
+                    print_table(
+                        ["Name", "Type", "Enabled", "Flags", "Outbound", "Inbound"],
+                        rows
+                    )
+                    print(f"\n    {Colors.CYAN}Tip: Run --investigate on a specific node for full details{Colors.END}")
+                else:
+                    print_warning(f"No nodes matching: {args.investigate}")
+            else:
+                # Single node: full investigation
+                node_type_str = bh.get_node_type(args.investigate)
+                if not node_type_str:
+                    print_warning(f"Node not found: {args.investigate}")
+                    return
+
+                print_header(f"Investigating {node_type_str}: {args.investigate}")
+
+                # Get node properties
+                node_info = bh.get_node_info(args.investigate)
+                if node_info:
+                    print_subheader("Properties")
+                    # Show key properties based on node type
+                    props = []
+                    if node_type_str == "User":
+                        props = [
+                            ["Enabled", node_info.get("enabled", "")],
+                            ["Admin Count", node_info.get("admincount", False)],
+                            ["Password Last Set", node_info.get("pwdlastset", "")],
+                            ["Last Logon", node_info.get("lastlogon", "")],
+                            ["Password Never Expires", node_info.get("pwdneverexpires", False)],
+                            ["Has SPN", node_info.get("hasspn", False)],
+                            ["DONT_REQ_PREAUTH", node_info.get("dontreqpreauth", False)],
+                        ]
+                        if node_info.get("description"):
+                            props.append(["Description", node_info.get("description", "")[:60]])
+                        if node_info.get("serviceprincipalnames"):
+                            spns = node_info.get("serviceprincipalnames", [])
+                            if spns:
+                                props.append(["SPNs", ", ".join(spns[:3]) + ("..." if len(spns) > 3 else "")])
+                    elif node_type_str == "Computer":
+                        props = [
+                            ["Enabled", node_info.get("enabled", "")],
+                            ["Operating System", node_info.get("operatingsystem", "")],
+                            ["LAPS", node_info.get("haslaps", False)],
+                            ["Unconstrained Delegation", node_info.get("unconstraineddelegation", False)],
+                            ["Last Logon", node_info.get("lastlogon", "")],
+                        ]
+                        if node_info.get("description"):
+                            props.append(["Description", node_info.get("description", "")[:60]])
+                    elif node_type_str == "Group":
+                        is_t0 = "admin_tier_0" in node_info.get("system_tags", []) or "Tag_Tier_Zero" in node_info.get("_labels", [])
+                        props = [
+                            ["Tier Zero", is_t0],
+                            ["Admin Count", node_info.get("admincount", False)],
+                        ]
+                        if node_info.get("description"):
+                            props.append(["Description", node_info.get("description", "")[:80]])
+                    print_table(["Property", "Value"], props)
+
+                # Outbound edges (attack paths FROM this node)
+                edges_out = bh.get_edges_from(args.investigate)
+                if edges_out:
+                    print_subheader(f"Outbound Attack Edges ({len(edges_out)})")
+                    # Highlight critical edges
+                    critical_edges = ["GenericAll", "WriteDacl", "WriteOwner", "DCSync", "AllExtendedRights"]
+                    rows = []
+                    for e in edges_out[:15]:
+                        rel = e["relationship"]
+                        if rel in critical_edges:
+                            rel = f"{Colors.FAIL}{rel}{Colors.END}"
+                        rows.append([rel, e["target"], e["target_type"]])
+                    print_table(["Relationship", "Target", "Type"], rows)
+                    if len(edges_out) > 15:
+                        print(f"    {Colors.GRAY}... and {len(edges_out) - 15} more{Colors.END}")
+
+                    # Show abuse templates for outbound edges if --abuse is set
+                    if config.show_abuse:
+                        from hackles.abuse.printer import print_abuse_info
+                        from hackles.core.utils import extract_domain
+
+                        # Get domain from node name
+                        domain = extract_domain([{"name": args.investigate}])
+
+                        # Group edges by relationship type to avoid duplicate abuse info
+                        seen_relationships = set()
+                        for e in edges_out[:5]:  # Limit to first 5 to avoid spam
+                            rel = e["relationship"]
+                            if rel in seen_relationships:
+                                continue
+                            seen_relationships.add(rel)
+
+                            # Build result context for abuse template
+                            result = {
+                                "principal": args.investigate,  # The attacker
+                                "target": e["target"],
+                                "target_type": e["target_type"].lower(),
+                            }
+                            # Add group placeholder if target is a group
+                            if e["target_type"].lower() == "group":
+                                result["group"] = e["target"]
+
+                            print_abuse_info(rel, [result], domain)
+
+                # Inbound edges (who can attack this node)
+                edges_in = bh.get_edges_to(args.investigate)
+                if edges_in:
+                    print_subheader(f"Inbound Attack Edges ({len(edges_in)})")
+                    rows = []
+                    for e in edges_in[:15]:
+                        rows.append([e["source"], e["source_type"], e["relationship"]])
+                    print_table(["Source", "Type", "Relationship"], rows)
+                    if len(edges_in) > 15:
+                        print(f"    {Colors.GRAY}... and {len(edges_in) - 15} more{Colors.END}")
+
+                # Type-specific sections
+                if node_type_str == "User":
+                    # Group memberships
+                    groups = bh.get_member_of(args.investigate)
+                    if groups:
+                        print_subheader(f"Group Memberships ({len(groups)})")
+                        rows = [[g["group_name"], g["tier_zero"]] for g in groups[:10]]
+                        print_table(["Group", "Tier Zero"], rows)
+                        if len(groups) > 10:
+                            print(f"    {Colors.GRAY}... and {len(groups) - 10} more{Colors.END}")
+
+                    # Sessions (where is this user logged in)
+                    sessions = bh.get_user_sessions(args.investigate)
+                    if sessions:
+                        print_subheader(f"Active Sessions ({len(sessions)})")
+                        rows = [[s["computer"], s.get("os", "")] for s in sessions[:10]]
+                        print_table(["Computer", "OS"], rows)
+
+                    # Admin rights
+                    admin_of = bh.get_admin_of(args.investigate)
+                    if admin_of:
+                        print_subheader(f"Admin Rights ({len(admin_of)})")
+                        rows = [[a["computer"], a.get("os", "")] for a in admin_of[:10]]
+                        print_table(["Computer", "OS"], rows)
+                        if len(admin_of) > 10:
+                            print(f"    {Colors.GRAY}... and {len(admin_of) - 10} more{Colors.END}")
+
+                    # Path to DA
+                    paths = bh.find_path_to_da(args.investigate)
+                    if paths:
+                        print_subheader(f"Path to Domain Admin ({len(paths)} path(s))")
+                        for p in paths[:3]:
+                            hops = p.get("path_length", 0)
+                            path_str = " -> ".join(p.get("nodes", []))
+                            print(f"    {Colors.WARNING}[{hops} hops]{Colors.END} {path_str}")
+
+                elif node_type_str == "Computer":
+                    # Sessions on this computer
+                    sessions = bh.get_computer_sessions(args.investigate)
+                    if sessions:
+                        print_subheader(f"Active Sessions ({len(sessions)})")
+                        rows = [[s["user"], s.get("admin", ""), s.get("enabled", "")] for s in sessions[:10]]
+                        print_table(["User", "Admin", "Enabled"], rows)
+
+                    # Local admins
+                    admins = bh.get_admins_to(args.investigate)
+                    if admins:
+                        print_subheader(f"Local Admins ({len(admins)})")
+                        rows = [[a["principal"], a["type"], a.get("enabled", "")] for a in admins[:10]]
+                        print_table(["Principal", "Type", "Enabled"], rows)
+                        if len(admins) > 10:
+                            print(f"    {Colors.GRAY}... and {len(admins) - 10} more{Colors.END}")
+
+                    # Group memberships
+                    groups = bh.get_member_of(args.investigate)
+                    if groups:
+                        print_subheader(f"Group Memberships ({len(groups)})")
+                        rows = [[g["group_name"], g["tier_zero"]] for g in groups[:10]]
+                        print_table(["Group", "Tier Zero"], rows)
+
+                elif node_type_str == "Group":
+                    # Members
+                    members = bh.get_group_members(args.investigate)
+                    if members:
+                        print_subheader(f"Members ({len(members)})")
+                        rows = [[m["member"], m["type"], m.get("admin", ""), m.get("enabled", "")] for m in members[:15]]
+                        print_table(["Member", "Type", "Admin", "Enabled"], rows)
+                        if len(members) > 15:
+                            print(f"    {Colors.GRAY}... and {len(members) - 15} more{Colors.END}")
+
+                    # Member of
+                    parent_groups = bh.get_member_of(args.investigate)
+                    if parent_groups:
+                        print_subheader(f"Member Of ({len(parent_groups)})")
+                        rows = [[g["group_name"], g["tier_zero"]] for g in parent_groups[:10]]
+                        print_table(["Group", "Tier Zero"], rows)
+
+                print()  # Final newline
+            return
+
         # === NODE INFO (early exit) ===
         if args.info:
             print_header(f"Node Information: {args.info}")
-            node_props = bh.get_node_info(args.info)
-            if node_props:
-                print_node_info(node_props)
+            result = bh.get_node_info(args.info)
+            if _has_wildcard(args.info):
+                # Wildcard: result is a list
+                if result:
+                    print_subheader(f"Found {len(result)} node(s)")
+                    # Show summary table for multiple nodes
+                    print_table(
+                        ["Name", "Type", "Enabled", "Domain"],
+                        [[n.get("name", ""), n.get("_type", ""), n.get("enabled", ""), n.get("domain", "")] for n in result]
+                    )
+                else:
+                    print_warning(f"No nodes matching: {args.info}")
             else:
-                print_warning(f"Node not found: {args.info}")
+                # Exact match: result is single dict or None
+                if result:
+                    print_node_info(result)
+                else:
+                    print_warning(f"Node not found: {args.info}")
             return
 
         # === NODE SEARCH (early exit) ===
@@ -386,10 +620,17 @@ def main():
             results = bh.get_group_members(args.members)
             if results:
                 print_subheader(f"Found {len(results)} member(s)")
-                print_table(
-                    ["Member", "Type", "Enabled"],
-                    [[r["member"], r["type"], r["enabled"]] for r in results]
-                )
+                if _has_wildcard(args.members):
+                    # Wildcard: results include 'group' field
+                    print_table(
+                        ["Group", "Member", "Type", "Admin", "Enabled"],
+                        [[r["group"], r["member"], r["type"], r["admin"], r["enabled"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["Member", "Type", "Admin", "Enabled"],
+                        [[r["member"], r["type"], r["admin"], r["enabled"]] for r in results]
+                    )
             else:
                 print_warning(f"Group not found or has no members: {args.members}")
             return
@@ -399,11 +640,18 @@ def main():
             print_header(f"Group Memberships: {args.memberof}")
             results = bh.get_member_of(args.memberof)
             if results:
-                print_subheader(f"Member of {len(results)} group(s)")
-                print_table(
-                    ["Group", "Tier Zero", "Description"],
-                    [[r["group_name"], r["tier_zero"], r["description"]] for r in results]
-                )
+                print_subheader(f"Found {len(results)} membership(s)")
+                if _has_wildcard(args.memberof):
+                    # Wildcard: results include 'principal' field
+                    print_table(
+                        ["Principal", "Group", "Tier Zero", "Description"],
+                        [[r["principal"], r["group_name"], r["tier_zero"], r["description"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["Group", "Tier Zero", "Description"],
+                        [[r["group_name"], r["tier_zero"], r["description"]] for r in results]
+                    )
             else:
                 print_warning(f"Principal not found or has no group memberships: {args.memberof}")
             return
@@ -414,10 +662,17 @@ def main():
             results = bh.get_admins_to(args.adminto)
             if results:
                 print_subheader(f"Found {len(results)} admin(s)")
-                print_table(
-                    ["Principal", "Type", "Enabled"],
-                    [[r["principal"], r["type"], r["enabled"]] for r in results]
-                )
+                if _has_wildcard(args.adminto):
+                    # Wildcard: results include 'computer' field
+                    print_table(
+                        ["Computer", "Principal", "Type", "Enabled"],
+                        [[r["computer"], r["principal"], r["type"], r["enabled"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["Principal", "Type", "Enabled"],
+                        [[r["principal"], r["type"], r["enabled"]] for r in results]
+                    )
             else:
                 print_warning(f"Computer not found or has no admins: {args.adminto}")
             return
@@ -427,11 +682,18 @@ def main():
             print_header(f"Admin Rights: {args.adminof}")
             results = bh.get_admin_of(args.adminof)
             if results:
-                print_subheader(f"Can admin {len(results)} computer(s)")
-                print_table(
-                    ["Computer", "Operating System", "Enabled"],
-                    [[r["computer"], r["os"], r["enabled"]] for r in results]
-                )
+                print_subheader(f"Found {len(results)} admin right(s)")
+                if _has_wildcard(args.adminof):
+                    # Wildcard: results include 'principal' field
+                    print_table(
+                        ["Principal", "Computer", "Operating System", "Enabled"],
+                        [[r["principal"], r["computer"], r["os"], r["enabled"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["Computer", "Operating System", "Enabled"],
+                        [[r["computer"], r["os"], r["enabled"]] for r in results]
+                    )
             else:
                 print_warning(f"Principal not found or has no admin rights: {args.adminof}")
             return
@@ -442,10 +704,17 @@ def main():
             results = bh.get_computer_sessions(args.sessions)
             if results:
                 print_subheader(f"Found {len(results)} session(s)")
-                print_table(
-                    ["User", "Admin", "Enabled"],
-                    [[r["user"], r["admin"], r["enabled"]] for r in results]
-                )
+                if _has_wildcard(args.sessions):
+                    # Wildcard: results include 'computer' field
+                    print_table(
+                        ["Computer", "User", "Admin", "Enabled"],
+                        [[r["computer"], r["user"], r["admin"], r["enabled"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["User", "Admin", "Enabled"],
+                        [[r["user"], r["admin"], r["enabled"]] for r in results]
+                    )
             else:
                 print_warning(f"Computer not found or has no sessions: {args.sessions}")
             return
@@ -456,10 +725,17 @@ def main():
             results = bh.get_edges_from(args.edges_from)
             if results:
                 print_subheader(f"Found {len(results)} outbound edge(s)")
-                print_table(
-                    ["Relationship", "Target", "Target Type"],
-                    [[r["relationship"], r["target"], r["target_type"]] for r in results]
-                )
+                if _has_wildcard(args.edges_from):
+                    # Wildcard: results include 'source' field
+                    print_table(
+                        ["Source", "Relationship", "Target", "Target Type"],
+                        [[r["source"], r["relationship"], r["target"], r["target_type"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["Relationship", "Target", "Target Type"],
+                        [[r["relationship"], r["target"], r["target_type"]] for r in results]
+                    )
             else:
                 print_warning(f"Principal not found or has no outbound edges: {args.edges_from}")
             return
@@ -470,10 +746,17 @@ def main():
             results = bh.get_edges_to(args.edges_to)
             if results:
                 print_subheader(f"Found {len(results)} inbound edge(s)")
-                print_table(
-                    ["Source", "Source Type", "Relationship"],
-                    [[r["source"], r["source_type"], r["relationship"]] for r in results]
-                )
+                if _has_wildcard(args.edges_to):
+                    # Wildcard: results include 'target' field
+                    print_table(
+                        ["Target", "Source", "Source Type", "Relationship"],
+                        [[r["target"], r["source"], r["source_type"], r["relationship"]] for r in results]
+                    )
+                else:
+                    print_table(
+                        ["Source", "Source Type", "Relationship"],
+                        [[r["source"], r["source_type"], r["relationship"]] for r in results]
+                    )
             else:
                 print_warning(f"Principal not found or has no inbound edges: {args.edges_to}")
             return

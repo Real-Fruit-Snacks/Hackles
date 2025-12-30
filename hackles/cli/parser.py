@@ -82,6 +82,8 @@ def create_parser() -> argparse.ArgumentParser:
     path_group.add_argument('--max-paths', type=int, default=25, metavar='N',
                            help='Maximum paths to return (default: 25)')
     node_group = parser.add_argument_group('Node Operations')
+    node_group.add_argument('--investigate', metavar='NODE',
+                           help='Comprehensive investigation of a node (user/computer/group, * wildcard supported)')
     node_group.add_argument('--info', metavar='PRINCIPAL',
                            help='Show all properties and labels for a node')
     node_group.add_argument('--search', metavar='TERM',

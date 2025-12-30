@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--investigate` command**: Comprehensive one-command investigation of any node (user/computer/group):
+  - Auto-detects node type and shows relevant information
+  - **User investigation**: Properties, group memberships, outbound/inbound attack edges, admin rights, active sessions, path to DA
+  - **Computer investigation**: Properties, active sessions, local admins, group memberships, attack edges
+  - **Group investigation**: Properties, members (with Admin column), parent groups, inbound control edges
+  - Supports wildcards for triage: `--investigate '*.DOMAIN.COM'` shows summary table sorted by attack relevance
+  - Critical attack edges (GenericAll, WriteDacl, etc.) highlighted in red
+  - Works with `--abuse` flag to show exploitation commands for each outbound attack edge
+
+- **Wildcard support for node operations**: All node operation commands now support `*` wildcards for pattern matching:
+  - `--info '*.DOMAIN.COM'` - Get info for multiple nodes matching pattern
+  - `--sessions '*.DOMAIN.COM'` - Sessions across multiple computers
+  - `--adminto '*.DOMAIN.COM'` - Admins to multiple computers
+  - `--adminof 'SVC_*'` - Admin rights for multiple principals
+  - `--members 'DOMAIN *'` - Members of multiple groups (with Admin column)
+  - `--memberof 'SVC_*'` - Group memberships for multiple principals
+  - `--edges-from '*.DOMAIN.COM'` - Outbound edges from multiple nodes
+  - `--edges-to 'DOMAIN ADMINS*'` - Inbound edges to multiple nodes
+  - Results include source/target context column when wildcards are used
+
+### Improved
+
+- **`--members` output**: Now includes Admin column showing `admincount` status, with results sorted by admin status first (admins at top)
+
 ## [0.2.0] - 2025-12-30
 
 ### Added

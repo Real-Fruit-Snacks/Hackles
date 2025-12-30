@@ -1,10 +1,25 @@
 """BloodHound CE Neo4j connection and query execution"""
+import re
 import time
-from typing import Optional
+from typing import Optional, List, Union
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError, Neo4jError
 from hackles.display.colors import Colors
 from hackles.core.cypher import node_type
+
+
+def _has_wildcard(pattern: str) -> bool:
+    """Check if pattern contains wildcard characters."""
+    return '*' in pattern
+
+
+def _pattern_to_regex(pattern: str) -> str:
+    """Convert a wildcard pattern to a case-insensitive regex.
+
+    Escapes special regex characters except *, then replaces * with .*
+    """
+    escaped = re.escape(pattern).replace(r'\*', '.*')
+    return f"(?i){escaped}"
 
 # Attack edge types for path analysis
 ATTACK_EDGES = [
@@ -185,26 +200,45 @@ class BloodHoundCE:
         results = self.run_query(query)
         return results[0]["removed"] if results else 0
 
-    def get_node_info(self, name: str) -> Optional[dict]:
-        """Get all properties of a node by name"""
-        query = """
-        MATCH (n) WHERE toUpper(n.name) = toUpper($name)
-        RETURN n, labels(n) AS labels
-        LIMIT 1
+    def get_node_info(self, name: str) -> Union[Optional[dict], List[dict]]:
+        """Get all properties of a node by name.
+
+        Supports wildcards (* matches any characters).
+        - Without wildcards: returns single dict or None
+        - With wildcards: returns list of dicts (may be empty)
         """
-        results = self.run_query(query, {"name": name})
-        if results:
-            node_props = dict(results[0]["n"])
-            node_props["_labels"] = results[0]["labels"]
-            return node_props
-        return None
+        if _has_wildcard(name):
+            regex_pattern = _pattern_to_regex(name)
+            query = f"""
+            MATCH (n) WHERE n.name =~ $pattern
+            RETURN n, labels(n) AS labels, {node_type('n')} AS type
+            ORDER BY n.name
+            LIMIT 100
+            """
+            results = self.run_query(query, {"pattern": regex_pattern})
+            nodes = []
+            for r in results:
+                node_props = dict(r["n"])
+                node_props["_labels"] = r["labels"]
+                node_props["_type"] = r["type"]
+                nodes.append(node_props)
+            return nodes
+        else:
+            query = """
+            MATCH (n) WHERE toUpper(n.name) = toUpper($name)
+            RETURN n, labels(n) AS labels
+            LIMIT 1
+            """
+            results = self.run_query(query, {"name": name})
+            if results:
+                node_props = dict(results[0]["n"])
+                node_props["_labels"] = results[0]["labels"]
+                return node_props
+            return None
 
     def search_nodes(self, pattern: str) -> list:
         """Search for nodes matching a pattern (supports * wildcards)"""
-        import re
-        # Escape special regex characters except *, then replace * with .*
-        escaped = re.escape(pattern).replace(r'\*', '.*')
-        regex_pattern = escaped
+        regex_pattern = _pattern_to_regex(pattern)
         query = f"""
         MATCH (n)
         WHERE n.name =~ $pattern
@@ -212,7 +246,7 @@ class BloodHoundCE:
         ORDER BY n.name
         LIMIT 100
         """
-        return self.run_query(query, {"pattern": f"(?i){regex_pattern}"})
+        return self.run_query(query, {"pattern": regex_pattern})
 
     def find_shortest_path(self, source: str, target: str) -> list:
         """Find shortest path between two nodes"""
@@ -266,80 +300,253 @@ class BloodHoundCE:
         return self.run_query(query, {"name": principal})
 
     def get_group_members(self, group_name: str) -> list:
-        """Get members of a group (recursive)"""
-        query = f"""
-        MATCH (g:Group) WHERE toUpper(g.name) = toUpper($name)
-        MATCH (m)-[:MemberOf*1..]->(g)
-        RETURN DISTINCT m.name AS member, {node_type('m')} AS type, m.enabled AS enabled
-        ORDER BY {node_type('m')}, m.name
-        LIMIT 500
+        """Get members of a group (recursive).
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'group' field.
         """
-        return self.run_query(query, {"name": group_name})
+        if _has_wildcard(group_name):
+            regex_pattern = _pattern_to_regex(group_name)
+            query = f"""
+            MATCH (g:Group) WHERE g.name =~ $pattern
+            MATCH (m)-[:MemberOf*1..]->(g)
+            RETURN DISTINCT g.name AS group, m.name AS member, {node_type('m')} AS type,
+                   m.enabled AS enabled, COALESCE(m.admincount, false) AS admin
+            ORDER BY group, admin DESC, type, member
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern})
+        else:
+            query = f"""
+            MATCH (g:Group) WHERE toUpper(g.name) = toUpper($name)
+            MATCH (m)-[:MemberOf*1..]->(g)
+            RETURN DISTINCT m.name AS member, {node_type('m')} AS type,
+                   m.enabled AS enabled, COALESCE(m.admincount, false) AS admin
+            ORDER BY admin DESC, type, member
+            LIMIT 500
+            """
+            return self.run_query(query, {"name": group_name})
 
     def get_member_of(self, principal: str) -> list:
-        """Get groups a principal belongs to"""
-        query = f"""
-        MATCH (n) WHERE toUpper(n.name) = toUpper($name)
-        MATCH (n)-[:MemberOf*1..]->(g:Group)
-        RETURN DISTINCT g.name AS group_name,
-               CASE WHEN 'admin_tier_0' IN g.system_tags OR g:Tag_Tier_Zero THEN 'Yes' ELSE 'No' END AS tier_zero,
-               g.description AS description
-        ORDER BY tier_zero DESC, g.name
+        """Get groups a principal belongs to.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'principal' field.
         """
-        return self.run_query(query, {"name": principal})
+        if _has_wildcard(principal):
+            regex_pattern = _pattern_to_regex(principal)
+            query = f"""
+            MATCH (n) WHERE n.name =~ $pattern
+            MATCH (n)-[:MemberOf*1..]->(g:Group)
+            RETURN DISTINCT n.name AS principal, g.name AS group_name,
+                   CASE WHEN 'admin_tier_0' IN g.system_tags OR g:Tag_Tier_Zero THEN 'Yes' ELSE 'No' END AS tier_zero,
+                   g.description AS description
+            ORDER BY n.name, tier_zero DESC, g.name
+            """
+            return self.run_query(query, {"pattern": regex_pattern})
+        else:
+            query = f"""
+            MATCH (n) WHERE toUpper(n.name) = toUpper($name)
+            MATCH (n)-[:MemberOf*1..]->(g:Group)
+            RETURN DISTINCT g.name AS group_name,
+                   CASE WHEN 'admin_tier_0' IN g.system_tags OR g:Tag_Tier_Zero THEN 'Yes' ELSE 'No' END AS tier_zero,
+                   g.description AS description
+            ORDER BY tier_zero DESC, g.name
+            """
+            return self.run_query(query, {"name": principal})
 
     def get_admins_to(self, computer: str) -> list:
-        """Get principals with admin rights to a computer"""
-        query = f"""
-        MATCH (c:Computer) WHERE toUpper(c.name) = toUpper($name)
-        MATCH (n)-[:AdminTo|MemberOf*1..3]->(c)
-        RETURN DISTINCT n.name AS principal, {node_type('n')} AS type, n.enabled AS enabled
-        ORDER BY {node_type('n')}, n.name
-        LIMIT 100
+        """Get principals with admin rights to a computer.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'computer' field.
         """
-        return self.run_query(query, {"name": computer})
+        if _has_wildcard(computer):
+            regex_pattern = _pattern_to_regex(computer)
+            query = f"""
+            MATCH (c:Computer) WHERE c.name =~ $pattern
+            MATCH (n)-[:AdminTo|MemberOf*1..3]->(c)
+            RETURN DISTINCT c.name AS computer, n.name AS principal, {node_type('n')} AS type, n.enabled AS enabled
+            ORDER BY c.name, {node_type('n')}, n.name
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern})
+        else:
+            query = f"""
+            MATCH (c:Computer) WHERE toUpper(c.name) = toUpper($name)
+            MATCH (n)-[:AdminTo|MemberOf*1..3]->(c)
+            RETURN DISTINCT n.name AS principal, {node_type('n')} AS type, n.enabled AS enabled
+            ORDER BY {node_type('n')}, n.name
+            LIMIT 100
+            """
+            return self.run_query(query, {"name": computer})
 
     def get_admin_of(self, principal: str) -> list:
-        """Get computers a principal can admin"""
-        query = f"""
-        MATCH (n) WHERE toUpper(n.name) = toUpper($name)
-        MATCH (n)-[:AdminTo|MemberOf*1..3]->(c:Computer)
-        RETURN DISTINCT c.name AS computer, c.operatingsystem AS os, c.enabled AS enabled
-        ORDER BY c.name
-        LIMIT 100
+        """Get computers a principal can admin.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'principal' field.
         """
-        return self.run_query(query, {"name": principal})
+        if _has_wildcard(principal):
+            regex_pattern = _pattern_to_regex(principal)
+            query = f"""
+            MATCH (n) WHERE n.name =~ $pattern
+            MATCH (n)-[:AdminTo|MemberOf*1..3]->(c:Computer)
+            RETURN DISTINCT n.name AS principal, c.name AS computer, c.operatingsystem AS os, c.enabled AS enabled
+            ORDER BY n.name, c.name
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern})
+        else:
+            query = f"""
+            MATCH (n) WHERE toUpper(n.name) = toUpper($name)
+            MATCH (n)-[:AdminTo|MemberOf*1..3]->(c:Computer)
+            RETURN DISTINCT c.name AS computer, c.operatingsystem AS os, c.enabled AS enabled
+            ORDER BY c.name
+            LIMIT 100
+            """
+            return self.run_query(query, {"name": principal})
 
     def get_computer_sessions(self, computer: str) -> list:
-        """Get sessions on a computer"""
-        query = """
-        MATCH (c:Computer) WHERE toUpper(c.name) = toUpper($name)
-        MATCH (c)-[:HasSession]->(u:User)
-        RETURN u.name AS user, u.admincount AS admin, u.enabled AS enabled
-        ORDER BY u.admincount DESC, u.name
+        """Get sessions on a computer.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'computer' field.
         """
-        return self.run_query(query, {"name": computer})
+        if _has_wildcard(computer):
+            regex_pattern = _pattern_to_regex(computer)
+            query = """
+            MATCH (c:Computer) WHERE c.name =~ $pattern
+            MATCH (c)-[:HasSession]->(u:User)
+            RETURN c.name AS computer, u.name AS user, u.admincount AS admin, u.enabled AS enabled
+            ORDER BY c.name, u.admincount DESC, u.name
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern})
+        else:
+            query = """
+            MATCH (c:Computer) WHERE toUpper(c.name) = toUpper($name)
+            MATCH (c)-[:HasSession]->(u:User)
+            RETURN u.name AS user, u.admincount AS admin, u.enabled AS enabled
+            ORDER BY u.admincount DESC, u.name
+            """
+            return self.run_query(query, {"name": computer})
 
     def get_edges_from(self, principal: str) -> list:
-        """Get outbound edges from a node"""
-        query = f"""
-        MATCH (n) WHERE toUpper(n.name) = toUpper($name)
-        MATCH (n)-[r]->(m)
-        WHERE type(r) IN $edge_types
-        RETURN type(r) AS relationship, m.name AS target, {node_type('m')} AS target_type
-        ORDER BY type(r), m.name
-        LIMIT 100
+        """Get outbound edges from a node.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'source' field.
         """
-        return self.run_query(query, {"name": principal, "edge_types": ATTACK_EDGES})
+        if _has_wildcard(principal):
+            regex_pattern = _pattern_to_regex(principal)
+            query = f"""
+            MATCH (n) WHERE n.name =~ $pattern
+            MATCH (n)-[r]->(m)
+            WHERE type(r) IN $edge_types
+            RETURN n.name AS source, type(r) AS relationship, m.name AS target, {node_type('m')} AS target_type
+            ORDER BY n.name, type(r), m.name
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern, "edge_types": ATTACK_EDGES})
+        else:
+            query = f"""
+            MATCH (n) WHERE toUpper(n.name) = toUpper($name)
+            MATCH (n)-[r]->(m)
+            WHERE type(r) IN $edge_types
+            RETURN type(r) AS relationship, m.name AS target, {node_type('m')} AS target_type
+            ORDER BY type(r), m.name
+            LIMIT 100
+            """
+            return self.run_query(query, {"name": principal, "edge_types": ATTACK_EDGES})
 
     def get_edges_to(self, principal: str) -> list:
-        """Get inbound edges to a node"""
+        """Get inbound edges to a node.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'target' field.
+        """
+        if _has_wildcard(principal):
+            regex_pattern = _pattern_to_regex(principal)
+            query = f"""
+            MATCH (m) WHERE m.name =~ $pattern
+            MATCH (n)-[r]->(m)
+            WHERE type(r) IN $edge_types
+            RETURN m.name AS target, n.name AS source, {node_type('n')} AS source_type, type(r) AS relationship
+            ORDER BY m.name, type(r), n.name
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern, "edge_types": ATTACK_EDGES})
+        else:
+            query = f"""
+            MATCH (m) WHERE toUpper(m.name) = toUpper($name)
+            MATCH (n)-[r]->(m)
+            WHERE type(r) IN $edge_types
+            RETURN n.name AS source, {node_type('n')} AS source_type, type(r) AS relationship
+            ORDER BY type(r), n.name
+            LIMIT 100
+            """
+            return self.run_query(query, {"name": principal, "edge_types": ATTACK_EDGES})
+
+    def get_node_type(self, name: str) -> Optional[str]:
+        """Get the type of a node (User, Computer, Group, etc.)."""
         query = f"""
-        MATCH (m) WHERE toUpper(m.name) = toUpper($name)
-        MATCH (n)-[r]->(m)
-        WHERE type(r) IN $edge_types
-        RETURN n.name AS source, {node_type('n')} AS source_type, type(r) AS relationship
-        ORDER BY type(r), n.name
+        MATCH (n) WHERE toUpper(n.name) = toUpper($name)
+        RETURN {node_type('n')} AS type
+        LIMIT 1
+        """
+        results = self.run_query(query, {"name": name})
+        if results:
+            return results[0]["type"]
+        return None
+
+    def get_user_sessions(self, user: str) -> list:
+        """Get computers where a user has active sessions.
+
+        Supports wildcards (* matches any characters).
+        When using wildcards, results include a 'user' field.
+        """
+        if _has_wildcard(user):
+            regex_pattern = _pattern_to_regex(user)
+            query = """
+            MATCH (u:User) WHERE u.name =~ $pattern
+            MATCH (c:Computer)-[:HasSession]->(u)
+            RETURN u.name AS user, c.name AS computer, c.operatingsystem AS os
+            ORDER BY u.name, c.name
+            LIMIT 500
+            """
+            return self.run_query(query, {"pattern": regex_pattern})
+        else:
+            query = """
+            MATCH (u:User) WHERE toUpper(u.name) = toUpper($name)
+            MATCH (c:Computer)-[:HasSession]->(u)
+            RETURN c.name AS computer, c.operatingsystem AS os
+            ORDER BY c.name
+            """
+            return self.run_query(query, {"name": user})
+
+    def investigate_nodes(self, pattern: str) -> list:
+        """Get nodes matching a pattern with key investigation data.
+
+        Returns summary data for triage when investigating multiple nodes.
+        """
+        regex_pattern = _pattern_to_regex(pattern)
+        query = f"""
+        MATCH (n) WHERE n.name =~ $pattern
+        OPTIONAL MATCH (n)-[r_out]->()
+        WHERE type(r_out) IN $edge_types
+        OPTIONAL MATCH ()-[r_in]->(n)
+        WHERE type(r_in) IN $edge_types
+        WITH n, count(DISTINCT r_out) AS outbound_edges, count(DISTINCT r_in) AS inbound_edges
+        RETURN n.name AS name,
+               {node_type('n')} AS type,
+               n.enabled AS enabled,
+               COALESCE(n.admincount, false) AS admin,
+               COALESCE(n.haslaps, null) AS laps,
+               COALESCE(n.unconstraineddelegation, false) AS unconstrained,
+               outbound_edges,
+               inbound_edges
+        ORDER BY outbound_edges DESC, inbound_edges DESC, n.name
         LIMIT 100
         """
-        return self.run_query(query, {"name": principal, "edge_types": ATTACK_EDGES})
+        return self.run_query(query, {"pattern": regex_pattern, "edge_types": ATTACK_EDGES})
