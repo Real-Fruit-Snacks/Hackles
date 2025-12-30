@@ -33,7 +33,8 @@ def get_kerberoastable(bh: BloodHoundCE, domain: Optional[str] = None, severity:
         u.displayname AS displayname,
         u.enabled AS enabled,
         u.admincount AS admincount,
-        u.description AS description
+        u.description AS description,
+        u.serviceprincipalnames AS spns
     ORDER BY u.admincount DESC, u.name
     """
     results = bh.run_query(query, params)
@@ -50,8 +51,8 @@ def get_kerberoastable(bh: BloodHoundCE, domain: Optional[str] = None, severity:
             print_warning(f"[!] {admin_count} are admin accounts!")
 
         print_table(
-            ["Name", "Display Name", "Enabled", "Admin", "Description"],
-            [[r["name"], r["displayname"], r["enabled"], r["admincount"], r["description"]] for r in results]
+            ["Name", "Display Name", "Enabled", "Admin", "SPN"],
+            [[r["name"], r["displayname"], r["enabled"], r["admincount"], r["spns"]] for r in results]
         )
         print_abuse_info("Kerberoasting", results, extract_domain(results, domain))
 

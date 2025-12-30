@@ -26,9 +26,9 @@ def get_top_controllers(bh: BloodHoundCE, domain: Optional[str] = None, severity
     MATCH (n)-[r]->(m)
     WHERE r.isacl = true
     {domain_filter}
-    WITH n, COUNT(DISTINCT m) AS controlled
+    WITH n, COLLECT(DISTINCT m.name)[0..5] AS sample_targets, COUNT(DISTINCT m) AS controlled
     WHERE controlled > 10
-    RETURN n.name AS principal, labels(n)[1] AS type, controlled AS objects_controlled
+    RETURN n.name AS principal, labels(n)[1] AS type, controlled AS objects_controlled, sample_targets
     ORDER BY controlled DESC
     LIMIT 50
     """
@@ -41,8 +41,8 @@ def get_top_controllers(bh: BloodHoundCE, domain: Optional[str] = None, severity
 
     if results:
         print_table(
-            ["Principal", "Type", "Objects Controlled"],
-            [[r["principal"], r["type"], r["objects_controlled"]] for r in results]
+            ["Principal", "Type", "Count", "Sample Targets"],
+            [[r["principal"], r["type"], r["objects_controlled"], r["sample_targets"]] for r in results]
         )
 
     return result_count

@@ -33,11 +33,15 @@ def get_esc6_san_flag(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     # ESC6a - direct enrollment to CA with SAN flag
     query_6a = f"""
     MATCH (n)-[:ADCSESC6a]->(ca:EnterpriseCA)
+    OPTIONAL MATCH (t:CertTemplate)-[:PublishedTo]->(ca)
+    WHERE t.authenticationenabled = true
     {domain_filter}
+    WITH n, ca, COLLECT(DISTINCT t.name)[0..3] AS usable_templates
     RETURN DISTINCT
         n.name AS principal,
         {node_type('n')} AS type,
         ca.name AS ca_name,
+        usable_templates,
         'ESC6a' AS variant
     ORDER BY ca.name, n.name
     LIMIT 50
@@ -47,11 +51,15 @@ def get_esc6_san_flag(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     # ESC6b - via template to CA with SAN flag
     query_6b = f"""
     MATCH (n)-[:ADCSESC6b]->(ca:EnterpriseCA)
+    OPTIONAL MATCH (t:CertTemplate)-[:PublishedTo]->(ca)
+    WHERE t.authenticationenabled = true
     {domain_filter}
+    WITH n, ca, COLLECT(DISTINCT t.name)[0..3] AS usable_templates
     RETURN DISTINCT
         n.name AS principal,
         {node_type('n')} AS type,
         ca.name AS ca_name,
+        usable_templates,
         'ESC6b' AS variant
     ORDER BY ca.name, n.name
     LIMIT 50
@@ -68,8 +76,8 @@ def get_esc6_san_flag(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     if results:
         print_warning("[!] CA has EDITF_ATTRIBUTESUBJECTALTNAME2 flag - arbitrary SAN injection possible")
         print_table(
-            ["Principal", "Type", "Certificate Authority", "Variant"],
-            [[r["principal"], r["type"], r["ca_name"], r["variant"]] for r in results]
+            ["Principal", "Type", "Certificate Authority", "Usable Templates", "Variant"],
+            [[r["principal"], r["type"], r["ca_name"], r.get("usable_templates", []), r["variant"]] for r in results]
         )
         print_abuse_info("ADCSESC6", results, extract_domain(results, domain))
 

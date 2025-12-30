@@ -5,7 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
-from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.display.tables import print_header, print_subheader
+from hackles.display.paths import print_path
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
@@ -30,8 +31,16 @@ def get_owned_to_dcsync(bh: BloodHoundCE, domain: Optional[str] = None, severity
     WITH owned, d
     MATCH p=shortestPath((owned)-[*1..5]->(d))
     WHERE ANY(r IN relationships(p) WHERE type(r) IN ['GetChanges', 'GetChangesAll', 'DCSync', 'AllExtendedRights', 'GenericAll'])
-    RETURN owned.name AS owned_principal, {node_type('owned')} AS owned_type,
-           d.name AS domain, length(p) AS hops
+    RETURN
+        [node IN nodes(p) | node.name] AS nodes,
+        [node IN nodes(p) | CASE
+            WHEN node:User THEN 'User'
+            WHEN node:Group THEN 'Group'
+            WHEN node:Computer THEN 'Computer'
+            WHEN node:Domain THEN 'Domain'
+            ELSE 'Other' END] AS node_types,
+        [r IN relationships(p) | type(r)] AS relationships,
+        length(p) AS path_length
     ORDER BY length(p)
     LIMIT 20
     """
@@ -43,10 +52,10 @@ def get_owned_to_dcsync(bh: BloodHoundCE, domain: Optional[str] = None, severity
     print_subheader(f"Found {result_count} path(s) to DCSync")
 
     if results:
-        print_table(
-            ["Owned Principal", "Type", "Target Domain", "Hops"],
-            [[r["owned_principal"], r["owned_type"], r["domain"], r["hops"]] for r in results]
-        )
-        print_abuse_info("DCSync", [{"principal": r["owned_principal"]} for r in results], extract_domain(results, None))
+        for r in results:
+            print_path(r)
+        # Extract owned principal names from the paths for abuse info
+        principals = [{"principal": r["nodes"][0]} for r in results if r.get("nodes")]
+        print_abuse_info("DCSync", principals, extract_domain([{"name": r["nodes"][-1]} for r in results if r.get("nodes")], None))
 
     return result_count

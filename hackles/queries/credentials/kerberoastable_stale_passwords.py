@@ -35,7 +35,8 @@ def get_kerberoastable_stale_passwords(bh: BloodHoundCE, domain: Optional[str] =
     RETURN u.name AS name,
            u.pwdlastset AS pwdlastset,
            u.description AS description,
-           u.admincount AS admincount
+           u.admincount AS admincount,
+           u.serviceprincipalnames AS spns
     ORDER BY u.pwdlastset ASC
     """
     results = bh.run_query(query, params)
@@ -58,8 +59,8 @@ def get_kerberoastable_stale_passwords(bh: BloodHoundCE, domain: Optional[str] =
             return "Unknown"
 
         print_table(
-            ["Name", "Password Age", "Description", "Admin"],
-            [[r["name"], format_pwd_age(r["pwdlastset"]), r["description"], r["admincount"]] for r in results]
+            ["Name", "Password Age", "Admin", "SPN"],
+            [[r["name"], format_pwd_age(r["pwdlastset"]), r["admincount"], r["spns"]] for r in results]
         )
         print_abuse_info("Kerberoasting", results, extract_domain(results, domain))
 

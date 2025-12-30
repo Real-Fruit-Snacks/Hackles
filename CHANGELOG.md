@@ -20,6 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - README examples now include correct `-u neo4j` flag and default password
 - Test files use correct function names from abuse loader module
+- **Domain Functional Level query**: Fixed type comparison error when BloodHound returns level as string (e.g., "2016") instead of integer
+- **RODC Allowed Replication query**: Fixed Cypher syntax error with ORDER BY after RETURN DISTINCT
+
+### Improved
+
+- **Query Output Completeness**: Enhanced 23 queries to return actionable information:
+  - **Kerberoasting queries** (3): Now show Service Principal Names (SPNs) for exploitation
+  - **Path queries** (8): Now display full attack paths with node types and relationships instead of just start/end
+  - **ADCS queries** (4): Now include Certificate Authority (CA) name for targeting
+  - **Count-only queries** (3): Now show sample targets alongside counts
+  - **Delegation queries** (1): Now show actual delegation SPNs for attack execution
+  - **ACL queries** (2): Now show permission type and GPO controllers
+  - **ESC6 query**: Now shows usable templates on vulnerable CAs
+  - **Circular groups query**: Now shows full cycle path for remediation
 
 ### Changed
 

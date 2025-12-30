@@ -28,9 +28,9 @@ def get_shadow_admins(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     MATCH (u:User)-[:MemberOf*2..]->(g:Group)-[:AdminTo]->(c:Computer)
     WHERE u.admincount = false OR u.admincount IS NULL
     {domain_filter}
-    WITH u, count(DISTINCT c) AS admin_count
+    WITH u, COLLECT(DISTINCT c.name)[0..5] AS sample_computers, count(DISTINCT c) AS admin_count
     WHERE admin_count > 0
-    RETURN u.name AS user, admin_count AS computers_admin_to
+    RETURN u.name AS user, admin_count AS computers_admin_to, sample_computers
     ORDER BY admin_count DESC
     LIMIT 50
     """
@@ -49,8 +49,8 @@ def get_shadow_admins(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
         print_warning(f"    Total: {result_count} users with {total_rights} indirect admin relationships")
 
         print_table(
-            ["User", "Computers Admin To (Indirect)"],
-            [[r["user"], r["computers_admin_to"]] for r in results]
+            ["User", "Count", "Sample Computers"],
+            [[r["user"], r["computers_admin_to"], r["sample_computers"]] for r in results]
         )
 
     return result_count

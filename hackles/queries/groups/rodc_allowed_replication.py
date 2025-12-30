@@ -33,13 +33,14 @@ def get_rodc_allowed_replication(bh: BloodHoundCE, domain: Optional[str] = None,
     OPTIONAL MATCH (m)-[:MemberOf*1..]->(g)
     WHERE (m:User OR m:Computer OR m:Group)
     {domain_filter}
-    RETURN DISTINCT
+    WITH DISTINCT g, m, COALESCE(m.admincount, false) AS admincount
+    RETURN
         g.name AS group_name,
         m.name AS member,
         CASE WHEN m:User THEN 'User' WHEN m:Computer THEN 'Computer' WHEN m:Group THEN 'Group' ELSE 'Other' END AS member_type,
         m.enabled AS enabled,
-        COALESCE(m.admincount, false) AS admincount
-    ORDER BY m.admincount DESC, m.name
+        admincount
+    ORDER BY admincount DESC, member
     """
     results = bh.run_query(query, params)
     results = [r for r in results if r.get("member")]

@@ -29,9 +29,13 @@ def get_gpos_dc_ou(bh: BloodHoundCE, domain: Optional[str] = None, severity: Sev
     WHERE toUpper(ou.name) CONTAINS 'DOMAIN CONTROLLERS'
     OR toUpper(ou.distinguishedname) CONTAINS 'OU=DOMAIN CONTROLLERS'
     {domain_filter}
+    OPTIONAL MATCH (controller)-[r]->(gpo)
+    WHERE r.isacl = true AND type(r) IN ['GenericAll', 'WriteDacl', 'WriteOwner', 'Owns', 'GenericWrite']
+    WITH gpo, ou, COLLECT(DISTINCT controller.name)[0..3] AS controllers
     RETURN
         gpo.name AS gpo_name,
         ou.name AS linked_to,
+        controllers,
         gpo.gpcpath AS gpo_path
     ORDER BY gpo.name
     """
@@ -45,8 +49,8 @@ def get_gpos_dc_ou(bh: BloodHoundCE, domain: Optional[str] = None, severity: Sev
     if results:
         print_warning("[!] GPOs affecting DCs are high-value targets for persistence!")
         print_table(
-            ["GPO Name", "Linked To", "GPO Path"],
-            [[r["gpo_name"], r["linked_to"], r["gpo_path"]] for r in results]
+            ["GPO Name", "Linked To", "Controllers", "GPO Path"],
+            [[r["gpo_name"], r["linked_to"], r.get("controllers", []), r["gpo_path"]] for r in results]
         )
         print_abuse_info("GPOAbuse", results, extract_domain(results, domain))
 

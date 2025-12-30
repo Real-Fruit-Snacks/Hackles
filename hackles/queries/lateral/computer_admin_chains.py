@@ -29,9 +29,9 @@ def get_computer_admin_chains(bh: BloodHoundCE, domain: Optional[str] = None, se
     AND c1.enabled = true AND c2.enabled = true
     {domain_filter}
     WITH u, collect(DISTINCT c1.name) + collect(DISTINCT c2.name) AS computers
-    WITH u, size(computers) AS computer_count
+    WITH u, size(computers) AS computer_count, computers[0..5] AS sample_computers
     WHERE computer_count > 1
-    RETURN u.name AS user, u.enabled AS enabled, computer_count AS computers_admin_to
+    RETURN u.name AS user, u.enabled AS enabled, computer_count AS computers_admin_to, sample_computers
     ORDER BY computer_count DESC
     LIMIT 50
     """
@@ -53,8 +53,8 @@ def get_computer_admin_chains(bh: BloodHoundCE, domain: Optional[str] = None, se
         print_warning(f"    Highest reach: {max_reach} computers from single user")
 
         print_table(
-            ["User", "Enabled", "Computers Admin To"],
-            [[r["user"], r["enabled"], r["computers_admin_to"]] for r in results]
+            ["User", "Enabled", "Count", "Sample Computers"],
+            [[r["user"], r["enabled"], r["computers_admin_to"], r["sample_computers"]] for r in results]
         )
 
     return result_count

@@ -33,11 +33,13 @@ def get_esc9_no_security_ext(bh: BloodHoundCE, domain: Optional[str] = None, sev
     # ESC9a - user can enroll and has write on another user
     query_9a = f"""
     MATCH (n)-[:ADCSESC9a]->(t:CertTemplate)
+    OPTIONAL MATCH (t)-[:PublishedTo]->(ca:EnterpriseCA)
     {domain_filter}
     RETURN DISTINCT
         n.name AS principal,
         {node_type('n')} AS type,
         t.name AS template,
+        ca.name AS ca,
         'ESC9a' AS variant
     ORDER BY t.name, n.name
     LIMIT 50
@@ -47,11 +49,13 @@ def get_esc9_no_security_ext(bh: BloodHoundCE, domain: Optional[str] = None, sev
     # ESC9b variant
     query_9b = f"""
     MATCH (n)-[:ADCSESC9b]->(t:CertTemplate)
+    OPTIONAL MATCH (t)-[:PublishedTo]->(ca:EnterpriseCA)
     {domain_filter}
     RETURN DISTINCT
         n.name AS principal,
         {node_type('n')} AS type,
         t.name AS template,
+        ca.name AS ca,
         'ESC9b' AS variant
     ORDER BY t.name, n.name
     LIMIT 50
@@ -68,8 +72,8 @@ def get_esc9_no_security_ext(bh: BloodHoundCE, domain: Optional[str] = None, sev
     if results:
         print_warning("[!] Templates without security extension allow impersonation via GenericWrite")
         print_table(
-            ["Principal", "Type", "Template", "Variant"],
-            [[r["principal"], r["type"], r["template"], r["variant"]] for r in results]
+            ["Principal", "Type", "Template", "CA", "Variant"],
+            [[r["principal"], r["type"], r["template"], r.get("ca", "Unknown"), r["variant"]] for r in results]
         )
         print_abuse_info("ADCSESC9", results, extract_domain(results, domain))
 

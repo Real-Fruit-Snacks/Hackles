@@ -32,7 +32,7 @@ def get_kerberoastable_with_admin(bh: BloodHoundCE, domain: Optional[str] = None
     OPTIONAL MATCH (u)-[:MemberOf*1..]->(g:Group)-[:AdminTo]->(c2:Computer)
     WITH u, COLLECT(DISTINCT c1) + COLLECT(DISTINCT c2) AS computers
     WHERE SIZE(computers) > 0
-    RETURN u.name AS name, SIZE(computers) AS admin_count, u.description AS description
+    RETURN u.name AS name, SIZE(computers) AS admin_count, u.description AS description, u.serviceprincipalnames AS spns
     ORDER BY admin_count DESC
     """
     results = bh.run_query(query, params)
@@ -45,8 +45,8 @@ def get_kerberoastable_with_admin(bh: BloodHoundCE, domain: Optional[str] = None
     if results:
         print_warning("[!] Cracking these accounts gives immediate local admin access!")
         print_table(
-            ["Name", "Admin To (Count)", "Description"],
-            [[r["name"], r["admin_count"], r["description"]] for r in results]
+            ["Name", "Admin To (Count)", "SPN"],
+            [[r["name"], r["admin_count"], r["spns"]] for r in results]
         )
         print_abuse_info("Kerberoasting", results, extract_domain(results, domain))
 

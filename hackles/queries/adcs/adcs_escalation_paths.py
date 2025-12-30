@@ -29,11 +29,13 @@ def get_adcs_escalation_paths(bh: BloodHoundCE, domain: Optional[str] = None, se
     MATCH p=(n)-[r:ADCSESC1|ADCSESC3|ADCSESC4|ADCSESC5|ADCSESC6a|ADCSESC6b|ADCSESC7|ADCSESC9a|ADCSESC9b|ADCSESC10a|ADCSESC10b|ADCSESC13]->(m)
     WHERE (n.admincount IS NULL OR n.admincount = false)
     {domain_filter}
+    OPTIONAL MATCH (m)-[:PublishedTo]->(ca:EnterpriseCA)
     RETURN
         n.name AS principal,
         {node_type('n')} AS type,
         type(r) AS escalation,
-        m.name AS target
+        m.name AS target,
+        ca.name AS ca
     ORDER BY type(r), n.name
     LIMIT 200
     """
@@ -59,8 +61,8 @@ def get_adcs_escalation_paths(bh: BloodHoundCE, domain: Optional[str] = None, se
 
         print()
         print_table(
-            ["Principal", "Type", "Escalation", "Target"],
-            [[r["principal"], r["type"], r["escalation"], r["target"]] for r in results]
+            ["Principal", "Type", "Escalation", "Target", "CA"],
+            [[r["principal"], r["type"], r["escalation"], r["target"], r.get("ca", "-")] for r in results]
         )
 
         # Print abuse info for each unique escalation type found

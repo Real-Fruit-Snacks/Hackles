@@ -5,7 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
-from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.display.tables import print_header, print_subheader, print_warning
+from hackles.display.paths import print_path
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
 
@@ -30,8 +31,14 @@ def get_shortest_paths_kerberoastable_to_da(bh: BloodHoundCE, domain: Optional[s
     AND (g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519')
     {domain_filter}
     RETURN
-        u.name AS user,
-        g.name AS target_group,
+        [node IN nodes(p) | node.name] AS nodes,
+        [node IN nodes(p) | CASE
+            WHEN node:User THEN 'User'
+            WHEN node:Group THEN 'Group'
+            WHEN node:Computer THEN 'Computer'
+            WHEN node:Domain THEN 'Domain'
+            ELSE 'Other' END] AS node_types,
+        [r IN relationships(p) | type(r)] AS relationships,
         length(p) AS path_length
     ORDER BY length(p)
     LIMIT 20
@@ -45,10 +52,10 @@ def get_shortest_paths_kerberoastable_to_da(bh: BloodHoundCE, domain: Optional[s
 
     if results:
         print_warning("[!] Prioritize cracking these accounts - they lead to DA!")
-        print_table(
-            ["Kerberoastable User", "Target Group", "Hops"],
-            [[r["user"], r["target_group"], r["path_length"]] for r in results]
-        )
-        print_abuse_info("Kerberoasting", results, extract_domain(results, domain))
+        for r in results:
+            print_path(r)
+        # Extract starting user names for abuse info
+        targets = [{"name": r["nodes"][0]} for r in results if r.get("nodes")]
+        print_abuse_info("Kerberoasting", targets, extract_domain(targets, domain))
 
     return result_count

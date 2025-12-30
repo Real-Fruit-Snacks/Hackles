@@ -5,7 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
-from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.display.tables import print_header, print_subheader
+from hackles.display.paths import print_path
 from hackles.core.cypher import node_type
 
 
@@ -31,7 +32,16 @@ def get_owned_to_high_value(bh: BloodHoundCE, domain: Optional[str] = None, seve
     AND n <> hvt
     WITH n, hvt
     MATCH p=shortestPath((n)-[*1..]->(hvt))
-    RETURN n.name AS owned, {node_type('n')} AS owned_type, hvt.name AS high_value_target, {node_type('hvt')} AS hvt_type, length(p) AS path_length
+    RETURN
+        [node IN nodes(p) | node.name] AS nodes,
+        [node IN nodes(p) | CASE
+            WHEN node:User THEN 'User'
+            WHEN node:Group THEN 'Group'
+            WHEN node:Computer THEN 'Computer'
+            WHEN node:Domain THEN 'Domain'
+            ELSE 'Other' END] AS node_types,
+        [r IN relationships(p) | type(r)] AS relationships,
+        length(p) AS path_length
     ORDER BY length(p)
     LIMIT 20
     """
@@ -43,9 +53,7 @@ def get_owned_to_high_value(bh: BloodHoundCE, domain: Optional[str] = None, seve
     print_subheader(f"Found {result_count} path(s) from owned to high value")
 
     if results:
-        print_table(
-            ["Owned Principal", "Type", "High Value Target", "Target Type", "Path Length"],
-            [[r["owned"], r["owned_type"], r["high_value_target"], r["hvt_type"], r["path_length"]] for r in results]
-        )
+        for r in results:
+            print_path(r)
 
     return result_count

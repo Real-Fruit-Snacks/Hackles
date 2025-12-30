@@ -23,11 +23,11 @@ def get_container_acl_abuse(bh: BloodHoundCE, domain: Optional[str] = None, seve
     params = {"domain": domain} if domain else {}
 
     query = f"""
-    MATCH (n)-[:GenericAll|WriteDacl|WriteOwner|Owns]->(ou:OU)
+    MATCH (n)-[r:GenericAll|WriteDacl|WriteOwner|Owns]->(ou:OU)
     WHERE NOT n.objectid ENDS WITH '-512'
       AND NOT n.objectid ENDS WITH '-519'
     {domain_filter}
-    RETURN n.name AS principal, labels(n)[1] AS type, ou.name AS ou_name
+    RETURN n.name AS principal, labels(n)[1] AS type, type(r) AS permission, ou.name AS ou_name
     ORDER BY ou.name
     """
     results = bh.run_query(query, params)
@@ -40,8 +40,8 @@ def get_container_acl_abuse(bh: BloodHoundCE, domain: Optional[str] = None, seve
     if results:
         print_warning("[!] ACLs on OUs may inherit to all child objects!")
         print_table(
-            ["Principal", "Type", "OU"],
-            [[r["principal"], r["type"], r["ou_name"]] for r in results]
+            ["Principal", "Type", "Permission", "OU"],
+            [[r["principal"], r["type"], r["permission"], r["ou_name"]] for r in results]
         )
 
     return result_count

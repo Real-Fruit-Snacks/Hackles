@@ -34,8 +34,8 @@ def get_constrained_delegation_dangerous(bh: BloodHoundCE, domain: Optional[str]
     {domain_filter}
     OPTIONAL MATCH (c)-[:MemberOf*1..]->(g:Group)
     WHERE g.objectid ENDS WITH '-516'
-    WITH n, c, CASE WHEN g IS NOT NULL THEN 'YES' ELSE 'NO' END AS is_dc
-    RETURN DISTINCT n.name AS principal, c.name AS target, is_dc
+    WITH n, c, n.allowedtodelegate AS spns, CASE WHEN g IS NOT NULL THEN 'YES' ELSE 'NO' END AS is_dc
+    RETURN DISTINCT n.name AS principal, c.name AS target, spns AS delegation_targets, is_dc
     ORDER BY is_dc DESC, n.name
     """
     results = bh.run_query(query, params)
@@ -50,8 +50,8 @@ def get_constrained_delegation_dangerous(bh: BloodHoundCE, domain: Optional[str]
         if dc_count:
             print_warning(f"[!] {dc_count} delegate to Domain Controllers - can lead to DCSync!")
         print_table(
-            ["Principal", "Target", "Is DC?"],
-            [[r["principal"], r["target"], r["is_dc"]] for r in results]
+            ["Principal", "Target", "Delegation SPNs", "Is DC?"],
+            [[r["principal"], r["target"], r["delegation_targets"], r["is_dc"]] for r in results]
         )
         print_abuse_info("ConstrainedDelegation", results, extract_domain(results, domain))
 

@@ -26,12 +26,14 @@ def get_esc1_vulnerable(bh: BloodHoundCE, domain: Optional[str] = None, severity
     params = {"domain": domain} if domain else {}
 
     query = f"""
-    MATCH (n)-[:ADCSESC1]->(m)
+    MATCH (n)-[:ADCSESC1]->(m:CertTemplate)
+    OPTIONAL MATCH (m)-[:PublishedTo]->(ca:EnterpriseCA)
     {domain_filter}
     RETURN DISTINCT
         n.name AS principal,
         {node_type('n')} AS type,
-        m.name AS template
+        m.name AS template,
+        ca.name AS ca
     ORDER BY m.name, n.name
     LIMIT 100
     """
@@ -44,8 +46,8 @@ def get_esc1_vulnerable(bh: BloodHoundCE, domain: Optional[str] = None, severity
 
     if results:
         print_table(
-            ["Principal", "Type", "Vulnerable Template"],
-            [[r["principal"], r["type"], r["template"]] for r in results]
+            ["Principal", "Type", "Vulnerable Template", "CA"],
+            [[r["principal"], r["type"], r["template"], r.get("ca", "Unknown")] for r in results]
         )
         print_abuse_info("ADCSESC1", results, extract_domain(results, domain))
 

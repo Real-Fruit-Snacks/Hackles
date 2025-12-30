@@ -5,7 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
-from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.display.tables import print_header, print_subheader
+from hackles.display.paths import print_path
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
@@ -29,8 +30,20 @@ def get_owned_to_adcs(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     MATCH p=(owned)-[*1..5]->(template:CertTemplate)-[:PublishedTo]->(ca:EnterpriseCA)
     WHERE template.enrolleesuppliessubject = true
     OR template.authenticationenabled = true
-    RETURN owned.name AS owned_principal, {node_type('owned')} AS owned_type,
-           template.name AS template, ca.name AS ca, length(p) AS hops
+    RETURN
+        [node IN nodes(p) | node.name] AS nodes,
+        [node IN nodes(p) | CASE
+            WHEN node:User THEN 'User'
+            WHEN node:Group THEN 'Group'
+            WHEN node:Computer THEN 'Computer'
+            WHEN node:CertTemplate THEN 'CertTemplate'
+            WHEN node:EnterpriseCA THEN 'EnterpriseCA'
+            WHEN node:Domain THEN 'Domain'
+            ELSE 'Other' END] AS node_types,
+        [r IN relationships(p) | type(r)] AS relationships,
+        length(p) AS path_length,
+        template.name AS template,
+        ca.name AS ca
     ORDER BY length(p)
     LIMIT 20
     """
@@ -42,10 +55,10 @@ def get_owned_to_adcs(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
     print_subheader(f"Found {result_count} path(s) to certificate templates")
 
     if results:
-        print_table(
-            ["Owned Principal", "Type", "Template", "CA", "Hops"],
-            [[r["owned_principal"], r["owned_type"], r["template"], r["ca"], r["hops"]] for r in results]
-        )
-        print_abuse_info("ADCSESC1", [{"principal": r["owned_principal"], "template": r["template"], "ca": r["ca"]} for r in results], extract_domain(results, None))
+        for r in results:
+            print_path(r)
+        # Extract info for abuse templates
+        abuse_data = [{"principal": r["nodes"][0], "template": r.get("template"), "ca": r.get("ca")} for r in results if r.get("nodes")]
+        print_abuse_info("ADCSESC1", abuse_data, extract_domain([{"name": r["nodes"][0]} for r in results if r.get("nodes")], None))
 
     return result_count

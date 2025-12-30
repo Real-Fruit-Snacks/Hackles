@@ -49,8 +49,24 @@ def get_domain_functional_level(bh: BloodHoundCE, domain: Optional[str] = None, 
     results = bh.run_query(query, params)
     result_count = len(results)
 
-    # Count outdated domains
-    outdated = [r for r in results if r.get("level") is not None and r["level"] < RECOMMENDED_LEVEL]
+    # Count outdated domains - handle string or int level values
+    def parse_level(level):
+        if level is None:
+            return None
+        if isinstance(level, int):
+            return level
+        # Handle string versions like "2016", "2012 R2", etc.
+        level_str = str(level).upper()
+        for lvl, name in FUNCTIONAL_LEVELS.items():
+            if level_str in name.upper() or name.upper() in level_str:
+                return lvl
+        # Try parsing as integer
+        try:
+            return int(level)
+        except (ValueError, TypeError):
+            return None
+
+    outdated = [r for r in results if parse_level(r.get("level")) is not None and parse_level(r["level"]) < RECOMMENDED_LEVEL]
     outdated_count = len(outdated)
 
     if not print_header("Domain Functional Level", severity, result_count):
@@ -62,8 +78,9 @@ def get_domain_functional_level(bh: BloodHoundCE, domain: Optional[str] = None, 
         display_results = []
         for r in results:
             level = r.get("level")
-            level_name = FUNCTIONAL_LEVELS.get(level, f"Unknown ({level})") if level is not None else "Unknown"
-            is_outdated = level is not None and level < RECOMMENDED_LEVEL
+            parsed = parse_level(level)
+            level_name = FUNCTIONAL_LEVELS.get(parsed, f"Unknown ({level})") if parsed is not None else str(level) if level else "Unknown"
+            is_outdated = parsed is not None and parsed < RECOMMENDED_LEVEL
             display_results.append([
                 r["domain"],
                 level if level is not None else "N/A",

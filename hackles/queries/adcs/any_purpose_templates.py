@@ -29,10 +29,12 @@ def get_any_purpose_templates(bh: BloodHoundCE, domain: Optional[str] = None, se
     AND NOT u.objectid ENDS WITH '-512'
     AND NOT u.objectid ENDS WITH '-519'
     {domain_filter}
+    OPTIONAL MATCH (c)-[:PublishedTo]->(ca:EnterpriseCA)
     RETURN
         u.name AS principal,
         {node_type('u')} AS type,
-        c.name AS template
+        c.name AS template,
+        ca.name AS ca
     ORDER BY c.name, u.name
     LIMIT 100
     """
@@ -45,8 +47,8 @@ def get_any_purpose_templates(bh: BloodHoundCE, domain: Optional[str] = None, se
 
     if results:
         print_table(
-            ["Principal", "Type", "Template"],
-            [[r["principal"], r["type"], r["template"]] for r in results]
+            ["Principal", "Type", "Template", "CA"],
+            [[r["principal"], r["type"], r["template"], r.get("ca", "Unknown")] for r in results]
         )
 
     return result_count

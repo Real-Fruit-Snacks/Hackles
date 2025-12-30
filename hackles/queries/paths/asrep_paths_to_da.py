@@ -5,7 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
-from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.display.tables import print_header, print_subheader, print_warning
+from hackles.display.paths import print_path
 from hackles.abuse.printer import print_abuse_info
 
 
@@ -33,7 +34,16 @@ def get_asrep_paths_to_da(bh: BloodHoundCE, domain: Optional[str] = None, severi
     WHERE g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519'
     WITH u, g
     MATCH p=shortestPath((u)-[*1..]->(g))
-    RETURN u.name AS user, g.name AS target_group, length(p) AS path_length
+    RETURN
+        [node IN nodes(p) | node.name] AS nodes,
+        [node IN nodes(p) | CASE
+            WHEN node:User THEN 'User'
+            WHEN node:Group THEN 'Group'
+            WHEN node:Computer THEN 'Computer'
+            WHEN node:Domain THEN 'Domain'
+            ELSE 'Other' END] AS node_types,
+        [r IN relationships(p) | type(r)] AS relationships,
+        length(p) AS path_length
     ORDER BY length(p)
     LIMIT 20
     """
@@ -46,10 +56,10 @@ def get_asrep_paths_to_da(bh: BloodHoundCE, domain: Optional[str] = None, severi
 
     if results:
         print_warning("AS-REP roast these users, crack password, then follow path to DA!")
-        print_table(
-            ["AS-REP User", "Target Group", "Path Length"],
-            [[r["user"], r["target_group"], r["path_length"]] for r in results]
-        )
-        print_abuse_info("ASREPRoasting", [{"name": r["user"]} for r in results], domain)
+        for r in results:
+            print_path(r)
+        # Extract starting user names for abuse info
+        targets = [{"name": r["nodes"][0]} for r in results if r.get("nodes")]
+        print_abuse_info("ASREPRoasting", targets, domain)
 
     return result_count

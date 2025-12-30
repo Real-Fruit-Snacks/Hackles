@@ -5,7 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
-from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.display.tables import print_header, print_subheader
+from hackles.display.paths import print_path
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
@@ -31,8 +32,16 @@ def get_owned_to_unconstrained(bh: BloodHoundCE, domain: Optional[str] = None, s
     AND owned <> target
     WITH owned, target
     MATCH p=shortestPath((owned)-[*1..5]->(target))
-    RETURN owned.name AS owned_principal, {node_type('owned')} AS owned_type,
-           target.name AS unconstrained_target, {node_type('target')} AS target_type, length(p) AS hops
+    RETURN
+        [node IN nodes(p) | node.name] AS nodes,
+        [node IN nodes(p) | CASE
+            WHEN node:User THEN 'User'
+            WHEN node:Group THEN 'Group'
+            WHEN node:Computer THEN 'Computer'
+            WHEN node:Domain THEN 'Domain'
+            ELSE 'Other' END] AS node_types,
+        [r IN relationships(p) | type(r)] AS relationships,
+        length(p) AS path_length
     ORDER BY length(p)
     LIMIT 25
     """
@@ -44,10 +53,10 @@ def get_owned_to_unconstrained(bh: BloodHoundCE, domain: Optional[str] = None, s
     print_subheader(f"Found {result_count} path(s) to unconstrained delegation")
 
     if results:
-        print_table(
-            ["Owned Principal", "Type", "Unconstrained Target", "Target Type", "Hops"],
-            [[r["owned_principal"], r["owned_type"], r["unconstrained_target"], r["target_type"], r["hops"]] for r in results]
-        )
-        print_abuse_info("UnconstrainedDelegation", [{"name": r["unconstrained_target"]} for r in results], extract_domain(results, None))
+        for r in results:
+            print_path(r)
+        # Extract target (last node) names for abuse info
+        targets = [{"name": r["nodes"][-1]} for r in results if r.get("nodes")]
+        print_abuse_info("UnconstrainedDelegation", targets, extract_domain(targets, None))
 
     return result_count
