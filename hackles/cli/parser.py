@@ -26,7 +26,7 @@ def create_parser() -> argparse.ArgumentParser:
     query_group.add_argument('-l', '--list', action='store_true',
                             help='List domains and exit')
     query_group.add_argument('-a', '--all', action='store_true',
-                            help='Run all queries without interactive selection')
+                            help='Run all queries')
     query_group.add_argument('-q', '--quiet', action='store_true',
                             help='Hide banner and zero-result queries')
     query_group.add_argument('--abuse', action='store_true',

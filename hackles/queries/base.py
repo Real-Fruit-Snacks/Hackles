@@ -30,7 +30,7 @@ def register_query(
     Args:
         name: Display name for the query
         category: Category for grouping (e.g., "Privilege Escalation")
-        default: Whether query is selected by default in interactive mode
+        default: Whether query runs by default with -a flag
         severity: Severity level (CRITICAL, HIGH, MEDIUM, LOW, INFO)
 
     Usage:
