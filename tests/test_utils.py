@@ -170,7 +170,7 @@ class TestExtractDomainEdgeCases:
 
         results = [
             {'irrelevant': 'data'},
-            {'name': 123},  # Wrong type
+            {'name': ''},  # Empty string
             {'name': 'USER@VALID.COM'}
         ]
         result = extract_domain(results)

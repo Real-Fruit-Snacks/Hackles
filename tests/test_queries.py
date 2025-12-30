@@ -66,7 +66,13 @@ class TestQueryFunctions:
 
         mock_bh = MagicMock()
         mock_bh.run_query.return_value = [
-            {"name": "SVC_SQL@DOMAIN.COM", "enabled": True, "admincount": False}
+            {
+                "name": "SVC_SQL@DOMAIN.COM",
+                "displayname": "SQL Service",
+                "enabled": True,
+                "admincount": False,
+                "description": "Service account"
+            }
         ]
 
         result = get_kerberoastable(mock_bh, None, Severity.HIGH)
