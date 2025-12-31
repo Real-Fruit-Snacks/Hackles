@@ -21,6 +21,49 @@ from hackles.display.tables import (
 from hackles.display.paths import print_path
 from hackles.queries import get_query_registry
 
+# Global to store args.html path for HTML output
+_html_output_path: Optional[str] = None
+
+
+def output_results(title: str, data: List[Dict[str, Any]], columns: List[str]) -> bool:
+    """Output results in the configured format (json/csv/html/table).
+
+    Args:
+        title: Title/heading for the output
+        data: List of dicts containing the data
+        columns: List of column names (used for CSV/HTML headers)
+
+    Returns:
+        True if output was handled (non-table format), False if table output should proceed
+    """
+    if config.output_format == 'json':
+        print(json.dumps(data, indent=2, default=str))
+        return True
+    elif config.output_format == 'csv':
+        writer = csv.writer(sys.stdout)
+        writer.writerow(columns)
+        for row in data:
+            # Try multiple key formats: exact, lowercase, lowercase with underscores
+            row_values = []
+            for col in columns:
+                key_variants = [col, col.lower(), col.lower().replace(' ', '_')]
+                value = None
+                for key in key_variants:
+                    if key in row:
+                        value = row[key]
+                        break
+                row_values.append(value if value is not None else '')
+            writer.writerow(row_values)
+        return True
+    elif config.output_format == 'html':
+        from hackles.display.report import generate_simple_html
+        if _html_output_path:
+            generate_simple_html(title, columns, data, _html_output_path)
+            print(f"HTML report saved to: {_html_output_path}")
+        return True
+    return False
+
+
 # Mapping of CLI flags to category names in the registry
 CATEGORY_FLAGS = {
     'acl': 'ACL Abuse',
@@ -277,6 +320,7 @@ def main():
     config.show_progress = args.progress
 
     # Set output format
+    global _html_output_path
     if args.json:
         config.output_format = 'json'
         config.quiet_mode = True  # Suppress normal output
@@ -285,6 +329,7 @@ def main():
         config.quiet_mode = True
     elif args.html:
         config.output_format = 'html'
+        _html_output_path = args.html
     else:
         config.output_format = 'table'
 
@@ -384,11 +429,31 @@ def main():
 
         # Show tier zero and exit if no -a flag
         if (args.tier_zero or args.untier_zero) and not args.all:
+            if config.output_format != 'table':
+                # Direct query for structured output
+                domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if args.domain else ""
+                params = {"domain": args.domain} if args.domain else {}
+                query = f"""
+                MATCH (n)
+                WHERE (n:Tag_Tier_Zero OR 'admin_tier_0' IN n.system_tags)
+                {domain_filter}
+                RETURN n.name AS name, labels(n)[0] AS type, n.enabled AS enabled
+                ORDER BY labels(n)[0], n.name
+                """
+                results = bh.run_query(query, params)
+                if output_results("Tier Zero Assets", results, ["name", "type", "enabled"]):
+                    return
             get_high_value_targets(bh, args.domain, Severity.INFO)
             return
 
         # List domains only
         if args.list:
+            domains = bh.get_domains()
+            if domains:
+                columns = ["name", "level", "objectid"]
+                if output_results("Domains", domains, columns):
+                    return
+            # Table output
             list_domains(bh)
             return
 
@@ -641,81 +706,200 @@ def main():
 
         # === NODE INFO (early exit) ===
         if args.info:
-            print_header(f"Node Information: {args.info}")
             result = bh.get_node_info(args.info)
             if _has_wildcard(args.info):
                 # Wildcard: result is a list
                 if result:
+                    # Format for structured output
+                    formatted = [{"name": n.get("name", ""), "type": n.get("_type", ""), "enabled": n.get("enabled", ""), "domain": n.get("domain", "")} for n in result]
+                    if output_results(f"Node Information: {args.info}", formatted, ["name", "type", "enabled", "domain"]):
+                        return
+                    # Table output
+                    print_header(f"Node Information: {args.info}")
                     print_subheader(f"Found {len(result)} node(s)")
-                    # Show summary table for multiple nodes
                     print_table(
                         ["Name", "Type", "Enabled", "Domain"],
                         [[n.get("name", ""), n.get("_type", ""), n.get("enabled", ""), n.get("domain", "")] for n in result]
                     )
                 else:
-                    print_warning(f"No nodes matching: {args.info}")
+                    if config.output_format == 'json':
+                        print("[]")
+                    elif config.output_format == 'csv':
+                        print("name,type,enabled,domain")
+                    else:
+                        print_header(f"Node Information: {args.info}")
+                        print_warning(f"No nodes matching: {args.info}")
             else:
                 # Exact match: result is single dict or None
                 if result:
-                    print_node_info(result)
+                    if config.output_format == 'json':
+                        print(json.dumps(result, indent=2, default=str))
+                    elif config.output_format == 'csv':
+                        writer = csv.writer(sys.stdout)
+                        writer.writerow(["property", "value"])
+                        for k, v in result.items():
+                            if not k.startswith('_'):
+                                writer.writerow([k, v])
+                    elif config.output_format == 'html':
+                        from hackles.display.report import generate_simple_html
+                        data = [{"property": k, "value": v} for k, v in result.items() if not k.startswith('_')]
+                        if _html_output_path:
+                            generate_simple_html(f"Node: {args.info}", ["property", "value"], data, _html_output_path)
+                            print(f"HTML report saved to: {_html_output_path}")
+                    else:
+                        print_header(f"Node Information: {args.info}")
+                        print_node_info(result)
                 else:
-                    print_warning(f"Node not found: {args.info}")
+                    if config.output_format == 'json':
+                        print("null")
+                    elif config.output_format == 'csv':
+                        print("property,value")
+                    else:
+                        print_header(f"Node Information: {args.info}")
+                        print_warning(f"Node not found: {args.info}")
             return
 
         # === NODE SEARCH (early exit) ===
         if args.search:
-            print_header(f"Search Results: {args.search}")
             results = bh.search_nodes(args.search)
             if results:
+                if output_results(f"Search Results: {args.search}", results, ["name", "type", "enabled", "domain"]):
+                    return
+                # Table output
+                print_header(f"Search Results: {args.search}")
                 print_subheader(f"Found {len(results)} match(es)")
                 print_table(
                     ["Name", "Type", "Enabled", "Domain"],
                     [[r["name"], r["type"], r["enabled"], r["domain"]] for r in results]
                 )
             else:
-                print_warning(f"No nodes matching: {args.search}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("name,type,enabled,domain")
+                else:
+                    print_header(f"Search Results: {args.search}")
+                    print_warning(f"No nodes matching: {args.search}")
             return
 
         # === PATH FINDING (early exit) ===
         if args.path:
             source, target = args.path
-            print_header(f"Shortest Path: {source} -> {target}")
             paths = bh.find_shortest_path(source, target)
             if paths:
+                if config.output_format == 'json':
+                    print(json.dumps(paths, indent=2, default=str))
+                    return
+                elif config.output_format == 'csv':
+                    writer = csv.writer(sys.stdout)
+                    writer.writerow(["hops", "path"])
+                    for p in paths:
+                        path_str = " -> ".join(p.get("nodes", []))
+                        writer.writerow([p.get("path_length", 0), path_str])
+                    return
+                elif config.output_format == 'html':
+                    from hackles.display.report import generate_simple_html
+                    data = [{"hops": p.get("path_length", 0), "path": " -> ".join(p.get("nodes", []))} for p in paths]
+                    if _html_output_path:
+                        generate_simple_html(f"Path: {source} -> {target}", ["hops", "path"], data, _html_output_path)
+                        print(f"HTML report saved to: {_html_output_path}")
+                    return
+                # Table output
+                print_header(f"Shortest Path: {source} -> {target}")
                 for path in paths:
                     print_path(path)
             else:
-                print_warning("No path found between nodes")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("hops,path")
+                else:
+                    print_header(f"Shortest Path: {source} -> {target}")
+                    print_warning("No path found between nodes")
             return
 
         if args.path_to_da:
-            print_header(f"Shortest Path to Domain Admin: {args.path_to_da}")
             paths = bh.find_path_to_da(args.path_to_da)
             if paths:
+                if config.output_format == 'json':
+                    print(json.dumps(paths, indent=2, default=str))
+                    return
+                elif config.output_format == 'csv':
+                    writer = csv.writer(sys.stdout)
+                    writer.writerow(["hops", "path"])
+                    for p in paths:
+                        path_str = " -> ".join(p.get("nodes", []))
+                        writer.writerow([p.get("path_length", 0), path_str])
+                    return
+                elif config.output_format == 'html':
+                    from hackles.display.report import generate_simple_html
+                    data = [{"hops": p.get("path_length", 0), "path": " -> ".join(p.get("nodes", []))} for p in paths]
+                    if _html_output_path:
+                        generate_simple_html(f"Path to DA: {args.path_to_da}", ["hops", "path"], data, _html_output_path)
+                        print(f"HTML report saved to: {_html_output_path}")
+                    return
+                # Table output
+                print_header(f"Shortest Path to Domain Admin: {args.path_to_da}")
                 for path in paths:
                     print_path(path)
             else:
-                print_warning("No path to Domain Admin found")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("hops,path")
+                else:
+                    print_header(f"Shortest Path to Domain Admin: {args.path_to_da}")
+                    print_warning("No path to Domain Admin found")
             return
 
         if args.path_to_dc:
-            print_header(f"Shortest Path to Domain Controller: {args.path_to_dc}")
             paths = bh.find_path_to_dc(args.path_to_dc)
             if paths:
+                if config.output_format == 'json':
+                    print(json.dumps(paths, indent=2, default=str))
+                    return
+                elif config.output_format == 'csv':
+                    writer = csv.writer(sys.stdout)
+                    writer.writerow(["hops", "path"])
+                    for p in paths:
+                        path_str = " -> ".join(p.get("nodes", []))
+                        writer.writerow([p.get("path_length", 0), path_str])
+                    return
+                elif config.output_format == 'html':
+                    from hackles.display.report import generate_simple_html
+                    data = [{"hops": p.get("path_length", 0), "path": " -> ".join(p.get("nodes", []))} for p in paths]
+                    if _html_output_path:
+                        generate_simple_html(f"Path to DC: {args.path_to_dc}", ["hops", "path"], data, _html_output_path)
+                        print(f"HTML report saved to: {_html_output_path}")
+                    return
+                # Table output
+                print_header(f"Shortest Path to Domain Controller: {args.path_to_dc}")
                 for path in paths:
                     print_path(path)
             else:
-                print_warning("No path to Domain Controller found")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("hops,path")
+                else:
+                    print_header(f"Shortest Path to Domain Controller: {args.path_to_dc}")
+                    print_warning("No path to Domain Controller found")
             return
 
         # === GROUP MEMBERS (early exit) ===
         if args.members:
-            print_header(f"Group Members: {args.members}")
             results = bh.get_group_members(args.members)
             if results:
+                if _has_wildcard(args.members):
+                    columns = ["group", "member", "type", "admin", "enabled"]
+                else:
+                    columns = ["member", "type", "admin", "enabled"]
+                if output_results(f"Group Members: {args.members}", results, columns):
+                    return
+                # Table output
+                print_header(f"Group Members: {args.members}")
                 print_subheader(f"Found {len(results)} member(s)")
                 if _has_wildcard(args.members):
-                    # Wildcard: results include 'group' field
                     print_table(
                         ["Group", "Member", "Type", "Admin", "Enabled"],
                         [[r["group"], r["member"], r["type"], r["admin"], r["enabled"]] for r in results]
@@ -726,17 +910,29 @@ def main():
                         [[r["member"], r["type"], r["admin"], r["enabled"]] for r in results]
                     )
             else:
-                print_warning(f"Group not found or has no members: {args.members}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("member,type,admin,enabled")
+                else:
+                    print_header(f"Group Members: {args.members}")
+                    print_warning(f"Group not found or has no members: {args.members}")
             return
 
         # === MEMBER OF (early exit) ===
         if args.memberof:
-            print_header(f"Group Memberships: {args.memberof}")
             results = bh.get_member_of(args.memberof)
             if results:
+                if _has_wildcard(args.memberof):
+                    columns = ["principal", "group_name", "tier_zero", "description"]
+                else:
+                    columns = ["group_name", "tier_zero", "description"]
+                if output_results(f"Group Memberships: {args.memberof}", results, columns):
+                    return
+                # Table output
+                print_header(f"Group Memberships: {args.memberof}")
                 print_subheader(f"Found {len(results)} membership(s)")
                 if _has_wildcard(args.memberof):
-                    # Wildcard: results include 'principal' field
                     print_table(
                         ["Principal", "Group", "Tier Zero", "Description"],
                         [[r["principal"], r["group_name"], r["tier_zero"], r["description"]] for r in results]
@@ -747,17 +943,29 @@ def main():
                         [[r["group_name"], r["tier_zero"], r["description"]] for r in results]
                     )
             else:
-                print_warning(f"Principal not found or has no group memberships: {args.memberof}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("group_name,tier_zero,description")
+                else:
+                    print_header(f"Group Memberships: {args.memberof}")
+                    print_warning(f"Principal not found or has no group memberships: {args.memberof}")
             return
 
         # === ADMIN TO COMPUTER (early exit) ===
         if args.adminto:
-            print_header(f"Admins to: {args.adminto}")
             results = bh.get_admins_to(args.adminto)
             if results:
+                if _has_wildcard(args.adminto):
+                    columns = ["computer", "principal", "type", "enabled"]
+                else:
+                    columns = ["principal", "type", "enabled"]
+                if output_results(f"Admins to: {args.adminto}", results, columns):
+                    return
+                # Table output
+                print_header(f"Admins to: {args.adminto}")
                 print_subheader(f"Found {len(results)} admin(s)")
                 if _has_wildcard(args.adminto):
-                    # Wildcard: results include 'computer' field
                     print_table(
                         ["Computer", "Principal", "Type", "Enabled"],
                         [[r["computer"], r["principal"], r["type"], r["enabled"]] for r in results]
@@ -768,17 +976,29 @@ def main():
                         [[r["principal"], r["type"], r["enabled"]] for r in results]
                     )
             else:
-                print_warning(f"Computer not found or has no admins: {args.adminto}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("principal,type,enabled")
+                else:
+                    print_header(f"Admins to: {args.adminto}")
+                    print_warning(f"Computer not found or has no admins: {args.adminto}")
             return
 
         # === ADMIN OF (early exit) ===
         if args.adminof:
-            print_header(f"Admin Rights: {args.adminof}")
             results = bh.get_admin_of(args.adminof)
             if results:
+                if _has_wildcard(args.adminof):
+                    columns = ["principal", "computer", "os", "enabled"]
+                else:
+                    columns = ["computer", "os", "enabled"]
+                if output_results(f"Admin Rights: {args.adminof}", results, columns):
+                    return
+                # Table output
+                print_header(f"Admin Rights: {args.adminof}")
                 print_subheader(f"Found {len(results)} admin right(s)")
                 if _has_wildcard(args.adminof):
-                    # Wildcard: results include 'principal' field
                     print_table(
                         ["Principal", "Computer", "Operating System", "Enabled"],
                         [[r["principal"], r["computer"], r["os"], r["enabled"]] for r in results]
@@ -789,17 +1009,29 @@ def main():
                         [[r["computer"], r["os"], r["enabled"]] for r in results]
                     )
             else:
-                print_warning(f"Principal not found or has no admin rights: {args.adminof}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("computer,os,enabled")
+                else:
+                    print_header(f"Admin Rights: {args.adminof}")
+                    print_warning(f"Principal not found or has no admin rights: {args.adminof}")
             return
 
         # === SESSIONS ON COMPUTER (early exit) ===
         if args.sessions:
-            print_header(f"Sessions on: {args.sessions}")
             results = bh.get_computer_sessions(args.sessions)
             if results:
+                if _has_wildcard(args.sessions):
+                    columns = ["computer", "user", "admin", "enabled"]
+                else:
+                    columns = ["user", "admin", "enabled"]
+                if output_results(f"Sessions on: {args.sessions}", results, columns):
+                    return
+                # Table output
+                print_header(f"Sessions on: {args.sessions}")
                 print_subheader(f"Found {len(results)} session(s)")
                 if _has_wildcard(args.sessions):
-                    # Wildcard: results include 'computer' field
                     print_table(
                         ["Computer", "User", "Admin", "Enabled"],
                         [[r["computer"], r["user"], r["admin"], r["enabled"]] for r in results]
@@ -810,17 +1042,29 @@ def main():
                         [[r["user"], r["admin"], r["enabled"]] for r in results]
                     )
             else:
-                print_warning(f"Computer not found or has no sessions: {args.sessions}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("user,admin,enabled")
+                else:
+                    print_header(f"Sessions on: {args.sessions}")
+                    print_warning(f"Computer not found or has no sessions: {args.sessions}")
             return
 
         # === EDGES FROM (early exit) ===
         if args.edges_from:
-            print_header(f"Outbound Edges: {args.edges_from}")
             results = bh.get_edges_from(args.edges_from)
             if results:
+                if _has_wildcard(args.edges_from):
+                    columns = ["source", "relationship", "target", "target_type"]
+                else:
+                    columns = ["relationship", "target", "target_type"]
+                if output_results(f"Outbound Edges: {args.edges_from}", results, columns):
+                    return
+                # Table output
+                print_header(f"Outbound Edges: {args.edges_from}")
                 print_subheader(f"Found {len(results)} outbound edge(s)")
                 if _has_wildcard(args.edges_from):
-                    # Wildcard: results include 'source' field
                     print_table(
                         ["Source", "Relationship", "Target", "Target Type"],
                         [[r["source"], r["relationship"], r["target"], r["target_type"]] for r in results]
@@ -831,17 +1075,29 @@ def main():
                         [[r["relationship"], r["target"], r["target_type"]] for r in results]
                     )
             else:
-                print_warning(f"Principal not found or has no outbound edges: {args.edges_from}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("relationship,target,target_type")
+                else:
+                    print_header(f"Outbound Edges: {args.edges_from}")
+                    print_warning(f"Principal not found or has no outbound edges: {args.edges_from}")
             return
 
         # === EDGES TO (early exit) ===
         if args.edges_to:
-            print_header(f"Inbound Edges: {args.edges_to}")
             results = bh.get_edges_to(args.edges_to)
             if results:
+                if _has_wildcard(args.edges_to):
+                    columns = ["target", "source", "source_type", "relationship"]
+                else:
+                    columns = ["source", "source_type", "relationship"]
+                if output_results(f"Inbound Edges: {args.edges_to}", results, columns):
+                    return
+                # Table output
+                print_header(f"Inbound Edges: {args.edges_to}")
                 print_subheader(f"Found {len(results)} inbound edge(s)")
                 if _has_wildcard(args.edges_to):
-                    # Wildcard: results include 'target' field
                     print_table(
                         ["Target", "Source", "Source Type", "Relationship"],
                         [[r["target"], r["source"], r["source_type"], r["relationship"]] for r in results]
@@ -852,29 +1108,91 @@ def main():
                         [[r["source"], r["source_type"], r["relationship"]] for r in results]
                     )
             else:
-                print_warning(f"Principal not found or has no inbound edges: {args.edges_to}")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("source,source_type,relationship")
+                else:
+                    print_header(f"Inbound Edges: {args.edges_to}")
+                    print_warning(f"Principal not found or has no inbound edges: {args.edges_to}")
             return
 
         # === QUICK FILTERS (standalone, always exit) ===
         if args.kerberoastable:
+            if config.output_format != 'table':
+                # Direct query for structured output
+                domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if args.domain else ""
+                params = {"domain": args.domain} if args.domain else {}
+                query = f"""
+                MATCH (u:User {{hasspn: true}})
+                WHERE NOT u.name STARTS WITH 'KRBTGT' {domain_filter}
+                RETURN u.name AS name, u.enabled AS enabled, u.admincount AS admin,
+                       u.serviceprincipalnames AS spns
+                ORDER BY u.admincount DESC
+                """
+                results = bh.run_query(query, params)
+                if output_results("Kerberoastable Users", results, ["name", "enabled", "admin", "spns"]):
+                    return
             get_kerberoastable(bh, args.domain, Severity.HIGH)
             return
 
         if args.asrep:
+            if config.output_format != 'table':
+                domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if args.domain else ""
+                params = {"domain": args.domain} if args.domain else {}
+                query = f"""
+                MATCH (u:User {{dontreqpreauth: true}})
+                WHERE u.enabled = true {domain_filter}
+                RETURN u.name AS name, u.enabled AS enabled, u.admincount AS admin
+                ORDER BY u.admincount DESC
+                """
+                results = bh.run_query(query, params)
+                if output_results("AS-REP Roastable Users", results, ["name", "enabled", "admin"]):
+                    return
             get_asrep_roastable(bh, args.domain, Severity.HIGH)
             return
 
         if args.unconstrained:
+            if config.output_format != 'table':
+                domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if args.domain else ""
+                params = {"domain": args.domain} if args.domain else {}
+                query = f"""
+                MATCH (n)
+                WHERE n.unconstraineddelegation = true
+                AND NOT n.objectid ENDS WITH '-516' {domain_filter}
+                RETURN n.name AS name, labels(n)[0] AS type, n.enabled AS enabled
+                ORDER BY labels(n)[0]
+                """
+                results = bh.run_query(query, params)
+                if output_results("Unconstrained Delegation", results, ["name", "type", "enabled"]):
+                    return
             get_unconstrained_delegation(bh, args.domain, Severity.HIGH)
             return
 
         if args.no_laps:
+            if config.output_format != 'table':
+                domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if args.domain else ""
+                params = {"domain": args.domain} if args.domain else {}
+                query = f"""
+                MATCH (c:Computer)
+                WHERE (c.haslaps IS NULL OR c.haslaps = false)
+                AND c.enabled = true {domain_filter}
+                RETURN c.name AS name, c.operatingsystem AS os, c.enabled AS enabled
+                ORDER BY c.name
+                """
+                results = bh.run_query(query, params)
+                if output_results("Computers Without LAPS", results, ["name", "os", "enabled"]):
+                    return
             get_computers_without_laps(bh, args.domain, Severity.MEDIUM)
             return
 
         if args.computers:
             results = bh.get_all_computers(args.domain)
             if results:
+                columns = ["name", "os", "enabled", "laps", "unconstrained"]
+                if output_results("All Domain Computers", results, columns):
+                    return
+                # Table output
                 print_header("All Domain Computers", Severity.INFO, len(results))
                 table = PrettyTable()
                 table.field_names = ["Computer", "OS", "Enabled", "LAPS", "Unconstrained"]
@@ -890,12 +1208,21 @@ def main():
                 print(table)
                 print(f"\n    Total: {len(results)} computer(s)")
             else:
-                print_warning("No computers found")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("name,os,enabled,laps,unconstrained")
+                else:
+                    print_warning("No computers found")
             return
 
         if args.users:
             results = bh.get_all_users(args.domain)
             if results:
+                columns = ["name", "enabled", "admin", "spn", "asrep", "neverexpires"]
+                if output_results("All Domain Users", results, columns):
+                    return
+                # Table output
                 print_header("All Domain Users", Severity.INFO, len(results))
                 table = PrettyTable()
                 table.field_names = ["User", "Enabled", "Admin", "SPN", "AS-REP", "PwdNeverExpires"]
@@ -912,12 +1239,21 @@ def main():
                 print(table)
                 print(f"\n    Total: {len(results)} user(s)")
             else:
-                print_warning("No users found")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("name,enabled,admin,spn,asrep,neverexpires")
+                else:
+                    print_warning("No users found")
             return
 
         if args.spns:
             results = bh.get_all_spns(args.domain)
             if results:
+                columns = ["account", "spn", "enabled", "admin"]
+                if output_results("All Service Principal Names", results, columns):
+                    return
+                # Table output
                 print_header("All Service Principal Names", Severity.INFO, len(results))
                 table = PrettyTable()
                 table.field_names = ["Account", "SPN", "Enabled", "Admin"]
@@ -932,11 +1268,53 @@ def main():
                 print(table)
                 print(f"\n    Total: {len(results)} SPN(s)")
             else:
-                print_warning("No SPNs found")
+                if config.output_format == 'json':
+                    print("[]")
+                elif config.output_format == 'csv':
+                    print("account,spn,enabled,admin")
+                else:
+                    print_warning("No SPNs found")
             return
 
         if args.quick_wins:
             results = bh.get_quick_wins(args.domain)
+
+            # Handle structured output formats
+            if config.output_format == 'json':
+                print(json.dumps(results, indent=2, default=str))
+                return
+            elif config.output_format == 'csv':
+                writer = csv.writer(sys.stdout)
+                writer.writerow(["category", "principal", "detail", "severity"])
+                for r in results.get("short_paths_to_da", []):
+                    path_str = " -> ".join(r.get("nodes", []))
+                    writer.writerow(["short_path_to_da", r["principal"], path_str, "CRITICAL"])
+                for r in results.get("kerberoastable_admins", []):
+                    writer.writerow(["kerberoastable_admin", r["account"], r.get("spn", ""), "HIGH"])
+                for r in results.get("asrep_roastable", []):
+                    writer.writerow(["asrep_roastable", r["account"], f"admin={r.get('admin', False)}", "HIGH"])
+                for r in results.get("direct_acl_abuse", []):
+                    writer.writerow(["direct_acl_abuse", r["principal"], f"{r['permission']} -> {r['target']}", "MEDIUM"])
+                return
+            elif config.output_format == 'html':
+                # Flatten results for HTML table
+                from hackles.display.report import generate_simple_html
+                flat_data = []
+                for r in results.get("short_paths_to_da", []):
+                    path_str = " -> ".join(r.get("nodes", []))
+                    flat_data.append({"category": "Direct Path to DA", "principal": r["principal"], "detail": path_str, "severity": "CRITICAL"})
+                for r in results.get("kerberoastable_admins", []):
+                    flat_data.append({"category": "Kerberoastable Admin", "principal": r["account"], "detail": r.get("spn", ""), "severity": "HIGH"})
+                for r in results.get("asrep_roastable", []):
+                    flat_data.append({"category": "AS-REP Roastable", "principal": r["account"], "detail": f"admin={r.get('admin', False)}", "severity": "HIGH"})
+                for r in results.get("direct_acl_abuse", []):
+                    flat_data.append({"category": "Direct ACL Abuse", "principal": r["principal"], "detail": f"{r['permission']} -> {r['target']}", "severity": "MEDIUM"})
+                if _html_output_path:
+                    generate_simple_html("Quick Wins Summary", ["category", "principal", "detail", "severity"], flat_data, _html_output_path)
+                    print(f"HTML report saved to: {_html_output_path}")
+                return
+
+            # Table output
             print(f"\n{Colors.BOLD}{'='*70}")
             print(f"{'QUICK WINS SUMMARY':^70}")
             print(f"{'='*70}{Colors.END}\n")

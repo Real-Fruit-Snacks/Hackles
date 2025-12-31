@@ -7,14 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-30
+
 ### Added
+
+- **Full JSON/CSV/HTML output format support for all CLI commands**: Previously only `-a` (run all queries) supported output formats. Now 21 additional commands support `--json`, `--csv`, and `--html` output:
+  - **Bulk lists**: `--computers`, `--users`, `--spns`
+  - **Quick filters**: `--kerberoastable`, `--asrep`, `--unconstrained`, `--no-laps`
+  - **Node operations**: `--list`, `--info`, `--search`
+  - **Path commands**: `--path`, `--path-to-da`, `--path-to-dc`
+  - **Membership**: `--members`, `--memberof`
+  - **Admin rights**: `--adminto`, `--adminof`, `--sessions`
+  - **Edge exploration**: `--edges-from`, `--edges-to`
+  - **Summaries**: `--quick-wins`, `--tier-zero`
+  - Example: `hackles --computers --json` returns `[{"name": "DC01.CORP.LOCAL", "os": "Windows Server 2022", ...}]`
+
+- **Simple HTML reports for single commands**: New `generate_simple_html()` function creates clean single-table HTML reports with search and CSV export functionality
 
 - **JSON/CSV output for `--stats` command**: The `--stats` flag now properly outputs structured data when combined with `--json` or `--csv`:
   - JSON output includes nested objects for users, computers, groups, and risk metrics
   - CSV output uses category/metric/value format for easy parsing
   - Example: `hackles --stats --json` returns `{"domain": "CORP.LOCAL", "users": {...}, "risk": {"score": 40, ...}}`
 
-- **Comprehensive test suite**: 92 automated tests covering all 54 CLI flags with full output logging
+- **Comprehensive test suite**: 157 automated tests covering all CLI flags and output formats with full output logging
 
 - **`--investigate` command**: Comprehensive one-command investigation of any node (user/computer/group):
   - Auto-detects node type and shows relevant information
@@ -205,6 +220,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable support for credentials
 - No hardcoded sensitive values
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Real-Fruit-Snacks/hackles/releases/tag/v0.1.0

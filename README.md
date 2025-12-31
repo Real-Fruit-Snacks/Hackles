@@ -141,13 +141,28 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --debug
 
 ### Output Formats
 
+All commands support `--json`, `--csv`, and `--html` output formats for scripting and automation.
+
 ```bash
+# Query output
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --json > results.json
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --csv > results.csv
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
+
+# Quick filters with structured output
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --computers --json    # All computers as JSON
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --users --csv         # All users as CSV
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --kerberoastable --json
+
+# Node operations with structured output
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --members 'DOMAIN ADMINS@CORP.LOCAL' --json
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --path-to-da 'USER@CORP.LOCAL' --csv
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --search '*ADMIN*' --html admins.html
+
+# Other options
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --stats --json        # Stats as JSON
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --no-color | tee output.txt
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --progress  # Show progress bar
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --stats --json  # Stats as JSON
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --progress         # Show progress bar
 ```
 
 ### Quick Filters

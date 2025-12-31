@@ -54,9 +54,5 @@ test_query.cypher
 test_all_features.sh
 test_bugfixes.sh
 
-# Test artifacts (logs are in /tmp/ but add patterns just in case)
-hackles_test_*.log
-hackles_test_*.txt
-hackles_test_*.json
-hackles_test_*.csv
-hackles_test_*.html
+# Test artifacts
+logs/
