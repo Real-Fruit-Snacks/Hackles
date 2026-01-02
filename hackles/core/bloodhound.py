@@ -1,7 +1,7 @@
 """BloodHound CE Neo4j connection and query execution"""
 import re
 import time
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Any
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError, Neo4jError
 from hackles.display.colors import Colors
