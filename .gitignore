@@ -114,16 +114,31 @@ Output.txt
 output.txt
 debug.txt
 error.txt
+Test_app.txt
+test_output*.txt
+*_output.txt
+*_results.txt
 
 # ===========================
-# Generated Reports (root level only)
+# Generated Reports and Analysis
 # ===========================
 # Be specific to avoid ignoring .github templates
+# Root-level reports
 /code_analysis_report.md
 /fix_changelog.md
 /fix_verification_report.md
 /github_release_prep_report.md
 /*_analysis.md
+/*_report.md
+/analysis_*.md
+/report_*.md
+
+# Common report patterns (any directory except .github)
+**/report_*.md
+**/analysis_*.md
+**/*_findings.md
+**/*_summary.md
+!.github/**/*.md
 
 # ===========================
 # Output Files (Query Results)
@@ -185,3 +200,62 @@ site/
 *.orig
 .cache/
 *.cache
+
+# ===========================
+# BloodHound Data Files
+# ===========================
+# SharpHound/AzureHound collection files
+*.zip
+bloodhound*.json
+*_bloodhound.json
+sharphound*.json
+azurehound*.json
+computers.json
+users.json
+groups.json
+domains.json
+sessions.json
+containers.json
+gpos.json
+ous.json
+
+# ===========================
+# Additional Safety Patterns
+# ===========================
+# Catch-all for common unwanted patterns
+**/drafts/
+**/backup/
+**/backups/
+**/.backup/
+**/archive/
+**/old/
+**/deprecated/
+**/_old/
+**/_backup/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Compressed files (except in specific locations)
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# Core dumps
+core
+core.*
+*.core
+
+# Editor backup files
+\#*\#
+.#*
+
+# macOS resource forks
+.AppleDouble
+.LSOverride
+
+# Windows shortcuts
+*.lnk
