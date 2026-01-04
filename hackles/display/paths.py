@@ -6,7 +6,6 @@ from prettytable import PrettyTable
 
 from hackles.core.config import config
 from hackles.display.colors import colors
-from hackles.display.tables import print_warning
 
 # Maximum paths to display
 MAX_PATHS_DISPLAY = 10

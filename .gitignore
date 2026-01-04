@@ -116,14 +116,14 @@ debug.txt
 error.txt
 
 # ===========================
-# Generated Reports
+# Generated Reports (root level only)
 # ===========================
-*_report.md
-*_analysis.md
-code_analysis_report.md
-fix_changelog.md
-fix_verification_report.md
-github_release_prep_report.md
+# Be specific to avoid ignoring .github templates
+/code_analysis_report.md
+/fix_changelog.md
+/fix_verification_report.md
+/github_release_prep_report.md
+/*_analysis.md
 
 # ===========================
 # Output Files (Query Results)

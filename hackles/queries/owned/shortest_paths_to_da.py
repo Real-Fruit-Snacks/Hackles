@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
-from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
 from hackles.display.tables import print_header, print_subheader, print_warning
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
     name="Owned -> Domain Admins", category="Owned", default=True, severity=Severity.CRITICAL
 )
 def get_shortest_paths_to_da(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get shortest paths from owned principals to Domain Admins"""
     domain_filter = "AND toUpper(g.domain) = toUpper($domain)" if domain else ""

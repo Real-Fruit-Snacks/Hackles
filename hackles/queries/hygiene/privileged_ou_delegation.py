@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     severity=Severity.HIGH,
 )
 def get_privileged_ou_delegation(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find non-admins with dangerous rights over OUs containing privileged objects"""
     domain_filter = "AND toUpper(ou.domain) = toUpper($domain)" if domain else ""
@@ -55,7 +55,7 @@ def get_privileged_ou_delegation(
         print()
 
         # Count unique OUs affected
-        unique_ous = len(set(r["ou_name"] for r in results))
+        unique_ous = len({r["ou_name"] for r in results})
         print_warning(f"    {unique_ous} privileged OU(s) affected")
 
         print_table(

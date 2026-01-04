@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     default=True,
     severity=Severity.MEDIUM,
 )
-def get_sessions(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+def get_sessions(bh: BloodHoundCE, domain: str | None = None, severity: Severity = None) -> int:
     """Get active sessions - where are privileged users logged in"""
     domain_filter = "WHERE toUpper(c.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}

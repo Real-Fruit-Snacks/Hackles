@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import glob
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable
 
 from hackles.api.client import BloodHoundAPI, BloodHoundAPIError
 
 
-def expand_file_patterns(patterns: List[str]) -> List[Path]:
+def expand_file_patterns(patterns: list[str]) -> list[Path]:
     """Expand file patterns (globs) to list of file paths.
 
     Args:
@@ -62,11 +62,11 @@ def get_content_type(file_path: Path) -> str:
 
 def ingest_files(
     api: BloodHoundAPI,
-    file_paths: List[Path],
+    file_paths: list[Path],
     wait_for_completion: bool = True,
     timeout: int = 300,
-    progress_callback: Optional[Callable[[str, int, int], None]] = None,
-) -> Dict:
+    progress_callback: Callable[[str, int, int], None] | None = None,
+) -> dict:
     """Ingest files into BloodHound CE via API.
 
     Args:

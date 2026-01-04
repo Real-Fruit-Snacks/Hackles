@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.core.cypher import node_type
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_domain_users_to_highvalue(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Shortest paths from Domain Users group to high value targets"""
     domain_filter = "AND toUpper(g.domain) = toUpper($domain)" if domain else ""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Enabled Guest Accounts", category="Security Hygiene", default=True, severity=Severity.HIGH
 )
 def get_enabled_guest_accounts(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find enabled Guest accounts"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

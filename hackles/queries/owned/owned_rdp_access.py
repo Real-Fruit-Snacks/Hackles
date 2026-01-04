@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 @register_query(name="Owned RDP Access", category="Owned", default=True, severity=Severity.MEDIUM)
 def get_owned_rdp_access(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find computers where owned principals have RDP access"""
     from_owned_filter = (

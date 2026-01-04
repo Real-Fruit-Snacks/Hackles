@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 @register_query(
     name="SQL Admin Access", category="Lateral Movement", default=True, severity=Severity.MEDIUM
 )
-def get_sql_admin(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+def get_sql_admin(bh: BloodHoundCE, domain: str | None = None, severity: Severity = None) -> int:
     """Get non-admin principals with SQL Server admin access"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Cross-Domain Sessions", category="Attack Paths", default=True, severity=Severity.LOW
 )
 def get_cross_domain_sessions(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find sessions crossing domain boundaries"""
     query = """

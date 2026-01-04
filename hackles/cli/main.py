@@ -267,7 +267,7 @@ def load_custom_queries(path_str: str):
     queries = []
 
     if path.is_file() and path.suffix == ".cypher":
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             content = f.read()
         name = path.stem.replace("_", " ").title()
 
@@ -375,7 +375,7 @@ def do_auth(args) -> None:
     url = args.api_url
 
     print(f"\n{colors.BLUE}[*] Create an API token in BloodHound CE:{colors.END}")
-    print(f"    Administration > API Tokens > Create Token")
+    print("    Administration > API Tokens > Create Token")
     print()
 
     token_id = input("Token ID: ").strip()
@@ -449,9 +449,9 @@ def do_ingest(args) -> None:
             print(f"    Files uploaded: {result['files_uploaded']}")
             print(f"    Total size: {format_bytes(result['total_bytes'])}")
             if result["completed"]:
-                print(f"    Ingestion: Complete")
+                print("    Ingestion: Complete")
             else:
-                print(f"    Ingestion: Pending (check BloodHound UI)")
+                print("    Ingestion: Pending (check BloodHound UI)")
 
         if result["files_failed"] > 0:
             print(f"{colors.WARNING}[!] Failed uploads: {result['files_failed']}{colors.END}")
@@ -493,13 +493,13 @@ def do_clear_database(args) -> None:
         [delete_ad, delete_azure, delete_sourceless, delete_ingest_history, delete_quality_history]
     ):
         print(f"{colors.WARNING}[!] No deletion options specified.{colors.END}")
-        print(f"    Use one or more of the following flags with --clear-database:")
-        print(f"      --delete-all             Delete everything")
-        print(f"      --delete-ad              Delete AD graph data")
-        print(f"      --delete-azure           Delete Azure graph data")
-        print(f"      --delete-sourceless      Delete sourceless graph data")
-        print(f"      --delete-ingest-history  Delete file ingest history")
-        print(f"      --delete-quality-history Delete data quality history")
+        print("    Use one or more of the following flags with --clear-database:")
+        print("      --delete-all             Delete everything")
+        print("      --delete-ad              Delete AD graph data")
+        print("      --delete-azure           Delete Azure graph data")
+        print("      --delete-sourceless      Delete sourceless graph data")
+        print("      --delete-ingest-history  Delete file ingest history")
+        print("      --delete-quality-history Delete data quality history")
         return
 
     # Build summary of what will be deleted
@@ -2280,20 +2280,20 @@ def main():
             status_print(
                 f"{colors.WARNING}[!] No queries selected. Use -a for all, or specify categories:{colors.END}"
             )
-            status_print(f"    --acl        ACL Abuse queries")
-            status_print(f"    --adcs       ADCS/Certificate queries")
-            status_print(f"    --privesc    Privilege Escalation queries")
-            status_print(f"    --delegation Delegation queries")
-            status_print(f"    --lateral    Lateral Movement queries")
-            status_print(f"    --hygiene    Security Hygiene queries")
-            status_print(f"    --owned-queries  Owned principal queries")
-            status_print(f"    --basic      Basic Info/Domain queries")
-            status_print(f"    --groups     Dangerous Groups queries")
-            status_print(f"    --attack-paths   Attack Path queries")
-            status_print(f"    --azure      Azure/Hybrid queries")
-            status_print(f"    --exchange   Exchange queries")
-            status_print(f"    --misc       Miscellaneous queries")
-            status_print(f"\n    Or use -a/--all to run everything")
+            status_print("    --acl        ACL Abuse queries")
+            status_print("    --adcs       ADCS/Certificate queries")
+            status_print("    --privesc    Privilege Escalation queries")
+            status_print("    --delegation Delegation queries")
+            status_print("    --lateral    Lateral Movement queries")
+            status_print("    --hygiene    Security Hygiene queries")
+            status_print("    --owned-queries  Owned principal queries")
+            status_print("    --basic      Basic Info/Domain queries")
+            status_print("    --groups     Dangerous Groups queries")
+            status_print("    --attack-paths   Attack Path queries")
+            status_print("    --azure      Azure/Hybrid queries")
+            status_print("    --exchange   Exchange queries")
+            status_print("    --misc       Miscellaneous queries")
+            status_print("\n    Or use -a/--all to run everything")
             return
 
         if not selected_queries:
@@ -2326,7 +2326,7 @@ def main():
             list_domains(bh)
 
         start_time = time.time()
-        severity_counts = {s: 0 for s in Severity}
+        severity_counts = dict.fromkeys(Severity, 0)
         all_results: List[Dict[str, Any]] = []
         query_timings: List[Tuple[str, float, int]] = []  # (name, elapsed, count)
 

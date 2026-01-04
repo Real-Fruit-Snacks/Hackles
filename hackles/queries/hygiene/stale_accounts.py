@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.display.colors import Severity
@@ -21,14 +21,13 @@ if TYPE_CHECKING:
     severity=Severity.LOW,
 )
 def get_stale_accounts(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get stale user accounts (no login in configured threshold days)"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}
 
     # Calculate threshold days ago in epoch
-    import time
 
     threshold_days_ago = int(time.time()) - (config.stale_days * 24 * 60 * 60)
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     name="ADCS ESC11 (SAN Enabled)", category="ADCS", default=True, severity=Severity.HIGH
 )
 def get_adcs_esc11(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """ADCS ESC11 - User-specified SAN enabled on CA"""
     domain_filter = "AND toUpper(eca.domain) = toUpper($domain)" if domain else ""

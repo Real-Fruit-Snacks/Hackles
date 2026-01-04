@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     severity=Severity.HIGH,
 )
 def get_server_operators_members(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find members of Server Operators group (can modify services on DCs)"""
     domain_filter = "AND toUpper(m.domain) = toUpper($domain)" if domain else ""

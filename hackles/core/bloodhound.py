@@ -358,7 +358,7 @@ class BloodHoundCE:
         """
         if _has_wildcard(principal):
             regex_pattern = _pattern_to_regex(principal)
-            query = f"""
+            query = """
             MATCH (n) WHERE n.name =~ $pattern
             MATCH (n)-[:MemberOf*1..]->(g:Group)
             RETURN DISTINCT n.name AS principal, g.name AS group_name,
@@ -368,7 +368,7 @@ class BloodHoundCE:
             """
             return self.run_query(query, {"pattern": regex_pattern})
         else:
-            query = f"""
+            query = """
             MATCH (n) WHERE toUpper(n.name) = toUpper($name)
             MATCH (n)-[:MemberOf*1..]->(g:Group)
             RETURN DISTINCT g.name AS group_name,
@@ -412,7 +412,7 @@ class BloodHoundCE:
         """
         if _has_wildcard(principal):
             regex_pattern = _pattern_to_regex(principal)
-            query = f"""
+            query = """
             MATCH (n) WHERE n.name =~ $pattern
             MATCH (n)-[:AdminTo|MemberOf*1..3]->(c:Computer)
             RETURN DISTINCT n.name AS principal, c.name AS computer, c.operatingsystem AS os, c.enabled AS enabled
@@ -421,7 +421,7 @@ class BloodHoundCE:
             """
             return self.run_query(query, {"pattern": regex_pattern})
         else:
-            query = f"""
+            query = """
             MATCH (n) WHERE toUpper(n.name) = toUpper($name)
             MATCH (n)-[:AdminTo|MemberOf*1..3]->(c:Computer)
             RETURN DISTINCT c.name AS computer, c.operatingsystem AS os, c.enabled AS enabled

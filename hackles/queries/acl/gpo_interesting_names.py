@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     name="GPO Interesting Names", category="ACL Abuse", default=True, severity=Severity.LOW
 )
 def get_gpo_interesting_names(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """GPOs with interesting names (password, credential, admin, deploy, etc.)"""
     domain_filter = "AND toUpper(g.domain) = toUpper($domain)" if domain else ""

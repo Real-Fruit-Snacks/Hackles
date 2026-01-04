@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.display.colors import Severity, colors
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     name="Domain Statistics", category="Basic Info", default=True, severity=Severity.INFO
 )
 def get_domain_stats(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get statistics for a domain"""
     domain_filter = "WHERE toUpper(n.domain) = toUpper($domain)" if domain else ""

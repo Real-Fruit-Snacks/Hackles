@@ -1,6 +1,5 @@
 """Tests for utility functions"""
 
-import pytest
 
 
 class TestExtractDomain:

@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 
 class TestAbuseTemplateLoader:
     """Test abuse template loading functionality."""

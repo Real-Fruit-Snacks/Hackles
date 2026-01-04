@@ -3,8 +3,6 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-import pytest
-
 
 class TestConfigDefaults:
     """Test Config class default values."""

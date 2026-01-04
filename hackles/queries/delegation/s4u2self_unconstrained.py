@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_s4u2self_unconstrained(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find accounts with both S4U2Self (Protocol Transition) and Unconstrained Delegation.
 

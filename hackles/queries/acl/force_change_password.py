@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="ForceChangePassword Targets", category="ACL Abuse", default=True, severity=Severity.HIGH
 )
 def get_force_change_password(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find non-admin principals that can force password changes on users.
 
@@ -58,7 +58,7 @@ def get_force_change_password(
     if results:
         # Count high-value targets
         admin_targets = sum(1 for r in results if r.get("target_is_admin") == "Yes")
-        enabled_targets = sum(1 for r in results if r.get("target_status") == "Enabled")
+        sum(1 for r in results if r.get("target_status") == "Enabled")
         if admin_targets > 0:
             print_warning(
                 f"[!] {admin_targets} target(s) are admin accounts - direct path to privilege escalation!"

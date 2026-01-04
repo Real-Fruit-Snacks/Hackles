@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     severity=Severity.HIGH,
 )
 def get_cross_domain_ownership(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find objects owned by principals from different domains"""
     query = f"""
@@ -46,7 +46,7 @@ def get_cross_domain_ownership(
         print_warning("    Ownership allows granting any permissions on the object.")
 
         # Count unique domain pairs
-        domain_pairs = set((r["owner_domain"], r["target_domain"]) for r in results)
+        domain_pairs = {(r["owner_domain"], r["target_domain"]) for r in results}
         print_warning(f"    Spans {len(domain_pairs)} domain pair(s)")
 
         print_table(

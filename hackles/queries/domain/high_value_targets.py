@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     severity=Severity.INFO,
 )
 def get_high_value_targets(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get objects marked as high value / Tier Zero"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""

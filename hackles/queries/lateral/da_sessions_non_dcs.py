@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_da_sessions_non_dcs(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find Domain Admin sessions on non-Domain Controller computers (credential theft opportunity)"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""
@@ -48,8 +48,8 @@ def get_da_sessions_non_dcs(
 
     if results:
         print_warning("[!] CRITICAL: Domain Admin credentials can be stolen from these computers!")
-        unique_computers = len(set(r["computer"] for r in results))
-        unique_das = len(set(r["domain_admin"] for r in results))
+        unique_computers = len({r["computer"] for r in results})
+        unique_das = len({r["domain_admin"] for r in results})
         print_warning(f"    {unique_das} Domain Admin(s) on {unique_computers} computer(s)")
         print_table(
             ["Computer", "OS", "Domain Admin", "Enabled"],

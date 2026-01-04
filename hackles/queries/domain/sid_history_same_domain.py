@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     name="SID History (Same Domain)", category="Basic Info", default=True, severity=Severity.HIGH
 )
 def get_sid_history_same_domain(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """SID History within same domain (persistence mechanism)"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Print Spooler on DCs", category="Security Hygiene", default=True, severity=Severity.HIGH
 )
 def get_spooler_on_dcs(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Print Spooler enabled on Domain Controllers (coercion attacks)"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""
@@ -32,7 +32,7 @@ def get_spooler_on_dcs(
     """
     results = bh.run_query(query, params)
     result_count = len(results)
-    enabled_count = sum(1 for r in results if r.get("spooler_enabled") == True)
+    enabled_count = sum(1 for r in results if r.get("spooler_enabled"))
 
     if not print_header("Print Spooler on DCs", severity, result_count):
         return result_count

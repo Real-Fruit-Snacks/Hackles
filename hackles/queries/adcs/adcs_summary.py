@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="ADCS - Certificate Authorities", category="ADCS", default=True, severity=Severity.INFO
 )
 def get_adcs_summary(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get ADCS summary (Certificate Authorities)"""
     domain_filter = "WHERE toUpper(ca.domain) = toUpper($domain)" if domain else ""

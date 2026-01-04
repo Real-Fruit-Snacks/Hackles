@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 @register_query(
     name="ADCS ESC8 (Web Enrollment)", category="ADCS", default=True, severity=Severity.HIGH
 )
-def get_adcs_esc8(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+def get_adcs_esc8(bh: BloodHoundCE, domain: str | None = None, severity: Severity = None) -> int:
     """ADCS ESC8 - Web enrollment enabled (NTLM relay to ADCS)"""
     domain_filter = "AND toUpper(eca.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}

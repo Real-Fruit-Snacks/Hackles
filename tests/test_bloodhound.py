@@ -1,8 +1,6 @@
 """Tests for BloodHoundCE class"""
 
-from unittest.mock import MagicMock, patch
 
-import pytest
 
 
 class TestBloodHoundCE:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 @register_query(
     name="Dangerous ACL Relationships", category="ACL Abuse", default=True, severity=Severity.HIGH
 )
-def get_acl_abuse(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+def get_acl_abuse(bh: BloodHoundCE, domain: str | None = None, severity: Severity = None) -> int:
     """Get dangerous ACL relationships"""
     print_warning("This query may take a while on large datasets...")
 
@@ -65,7 +65,7 @@ def get_acl_abuse(bh: BloodHoundCE, domain: Optional[str] = None, severity: Seve
         )
 
         # Print abuse info for each unique permission type found
-        unique_permissions = set(r["permission"] for r in results)
+        unique_permissions = {r["permission"] for r in results}
         extracted_domain = extract_domain(results, domain)
         for perm in sorted(unique_permissions):
             # Filter findings for this specific permission type

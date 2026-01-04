@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="ADCS ESC2/ESC3 Any Purpose", category="ADCS", default=True, severity=Severity.HIGH
 )
 def get_any_purpose_templates(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get ESC2/ESC3 - Any Purpose certificate templates"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""

@@ -9,7 +9,6 @@ from __future__ import annotations
 import configparser
 import os
 from pathlib import Path
-from typing import Optional, Tuple
 
 
 def get_config_dir() -> Path:
@@ -32,7 +31,7 @@ class APIConfig:
     Directory is created with mode 0o700 for security.
     """
 
-    def __init__(self, config_file: Optional[str] = None):
+    def __init__(self, config_file: str | None = None):
         """Initialize API configuration.
 
         Args:
@@ -60,9 +59,9 @@ class APIConfig:
 
     def save(
         self,
-        url: Optional[str] = None,
-        token_id: Optional[str] = None,
-        token_key: Optional[str] = None,
+        url: str | None = None,
+        token_id: str | None = None,
+        token_key: str | None = None,
     ) -> None:
         """Save configuration to file.
 
@@ -116,7 +115,7 @@ class APIConfig:
         """Get the API token secret key."""
         return self._config["DEFAULT"].get("token_key", "")
 
-    def get_credentials(self) -> Tuple[str, str, str]:
+    def get_credentials(self) -> tuple[str, str, str]:
         """Get all credentials as a tuple.
 
         Returns:

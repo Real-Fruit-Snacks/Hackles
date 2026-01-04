@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="External Trust Analysis", category="Basic Info", default=True, severity=Severity.MEDIUM
 )
 def get_external_trust_analysis(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """External and forest trust analysis"""
     query = """
@@ -36,7 +36,7 @@ def get_external_trust_analysis(
     print_subheader(f"Found {result_count} trust relationship(s)")
 
     if results:
-        no_filter = sum(1 for r in results if r.get("sid_filtering") == False)
+        no_filter = sum(1 for r in results if not r.get("sid_filtering"))
         if no_filter:
             print_warning(
                 f"[!] {no_filter} trust(s) without SID filtering - Golden Ticket abuse possible!"

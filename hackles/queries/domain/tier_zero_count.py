@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Tier Zero Principal Count", category="Basic Info", default=True, severity=Severity.INFO
 )
 def get_tier_zero_count(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Count Tier Zero principals per domain"""
     domain_filter = "WHERE toUpper(d.name) = toUpper($domain)" if domain else ""
@@ -36,7 +36,7 @@ def get_tier_zero_count(
 
     if not print_header("Tier Zero Principal Count", severity, result_count):
         return result_count
-    print_subheader(f"Tier Zero principals per domain")
+    print_subheader("Tier Zero principals per domain")
 
     if results:
         total = sum(r["tier_zero_count"] or 0 for r in results)

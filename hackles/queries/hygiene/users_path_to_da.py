@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Users with Paths to DA", category="Security Hygiene", default=True, severity=Severity.HIGH
 )
 def get_users_path_to_da(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Calculate percentage and list of users with attack paths to Domain Admins"""
     domain_filter = "WHERE toUpper(u.domain) = toUpper($domain)" if domain else ""

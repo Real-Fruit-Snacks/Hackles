@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     name="Security Tools Detection", category="Miscellaneous", default=False, severity=Severity.INFO
 )
 def get_security_tools(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Security tools detected via naming conventions"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_coercion_chain(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find DC -> Unconstrained Delegation attack chains for TGT capture"""
     domain_filter = "AND toUpper(dc.domain) = toUpper($domain)" if domain else ""

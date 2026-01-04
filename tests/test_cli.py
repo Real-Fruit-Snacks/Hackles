@@ -1,6 +1,5 @@
 """Tests for CLI argument parsing"""
 
-from unittest.mock import patch
 
 import pytest
 

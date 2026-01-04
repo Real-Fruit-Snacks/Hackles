@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="ADCS ESC5 - PKI Object Control", category="ADCS", default=True, severity=Severity.HIGH
 )
 def get_esc5_pki_object(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find ESC5 vulnerable configurations - control over PKI objects.
 

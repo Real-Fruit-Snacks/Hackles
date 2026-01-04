@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     severity=Severity.HIGH,
 )
 def get_ntlm_relay_targets(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """NTLM relay opportunities - computers with admin rights to SMB signing disabled targets"""
     domain_filter = "WHERE toUpper(c1.domain) = toUpper($domain)" if domain else ""

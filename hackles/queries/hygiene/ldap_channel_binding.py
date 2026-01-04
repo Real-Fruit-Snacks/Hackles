@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     severity=Severity.MEDIUM,
 )
 def get_ldap_channel_binding(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """LDAP signing and channel binding status on DCs"""
     domain_filter = "WHERE toUpper(d.name) = toUpper($domain)" if domain else ""
@@ -44,7 +44,7 @@ def get_ldap_channel_binding(
         vulnerable = sum(
             1
             for r in results
-            if r.get("ldap_signing") == False or r.get("channel_binding") == False
+            if not r.get("ldap_signing") or not r.get("channel_binding")
         )
         if vulnerable:
             print_warning(f"[!] {vulnerable} DC(s) vulnerable to NTLM relay!")

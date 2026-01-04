@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     severity=Severity.HIGH,
 )
 def get_esc15_vulnerable(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find ESC15 vulnerable templates (CVE-2024-49019)"""
     domain_filter = "AND toUpper(ct.domain) = toUpper($domain)" if domain else ""

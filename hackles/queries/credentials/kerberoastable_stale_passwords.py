@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_kerberoastable_stale_passwords(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Kerberoastable users with passwords older than 5 years - most likely to crack"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

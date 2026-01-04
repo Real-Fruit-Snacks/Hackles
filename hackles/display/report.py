@@ -1,6 +1,5 @@
 """HTML report generation for hackles"""
 
-import html
 import re
 from datetime import datetime
 from typing import Any, Dict, List
@@ -550,8 +549,8 @@ def generate_html_report(results: List[Dict[str, Any]], output_path: str) -> Non
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_output)
-    except IOError as e:
-        raise IOError(f"Failed to write HTML report to '{output_path}': {e}") from e
+    except OSError as e:
+        raise OSError(f"Failed to write HTML report to '{output_path}': {e}") from e
 
 
 SIMPLE_HTML_TEMPLATE = """<!DOCTYPE html>
@@ -739,5 +738,5 @@ def generate_simple_html(
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html_output)
-    except IOError as e:
-        raise IOError(f"Failed to write HTML report to '{output_path}': {e}") from e
+    except OSError as e:
+        raise OSError(f"Failed to write HTML report to '{output_path}': {e}") from e

@@ -1,8 +1,6 @@
 """Tests for query functions"""
 
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 
 class TestQueryRegistry:
@@ -62,7 +60,6 @@ class TestQueryFunctions:
 
     def test_kerberoastable_query_with_results(self, mock_config):
         """Test kerberoastable query with results."""
-        from unittest.mock import MagicMock
 
         from hackles.display.colors import Severity
         from hackles.queries.credentials.kerberoastable import get_kerberoastable
@@ -93,9 +90,9 @@ class TestQueryFunctions:
         assert call_args is not None
         # Second argument should be params dict with domain
         if len(call_args[0]) > 1:
-            params = call_args[0][1]
+            call_args[0][1]
         else:
-            params = call_args[1].get("params", {}) if call_args[1] else {}
+            call_args[1].get("params", {}) if call_args[1] else {}
 
 
 class TestQueryReturnValues:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="All DCSync Principals", category="Credentials", default=True, severity=Severity.CRITICAL
 )
 def get_dcsync_principals(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find all principals with DCSync rights (GetChanges + GetChangesAll)"""
     domain_filter = "AND toUpper(d.name) = toUpper($domain)" if domain else ""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     name="GPO Creator Owners", category="Dangerous Groups", default=True, severity=Severity.MEDIUM
 )
 def get_gpo_creator_owners(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find members of Group Policy Creator Owners"""
     domain_filter = "AND toUpper(m.domain) = toUpper($domain)" if domain else ""

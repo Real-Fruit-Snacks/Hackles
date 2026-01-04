@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Machine Account Quota", category="Basic Info", default=True, severity=Severity.INFO
 )
 def get_machine_account_quota(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Check machine account quota - can users add computers?"""
     domain_filter = "WHERE toUpper(d.name) = toUpper($domain)" if domain else ""

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
-from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
     name="Owned -> ADCS Templates", category="Owned", default=True, severity=Severity.HIGH
 )
 def get_owned_to_adcs(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find paths from owned principals to ADCS escalation (ESC1, ESC4, etc.)"""
     from_owned_filter = (

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.core.cypher import node_type
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     name="Owned Local Admin Rights", category="Owned", default=True, severity=Severity.MEDIUM
 )
 def get_owned_local_admin(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find computers where owned principals have local admin rights"""
     from_owned_filter = (

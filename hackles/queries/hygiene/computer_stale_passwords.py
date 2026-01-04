@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.display.colors import Severity
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     severity=Severity.LOW,
 )
 def get_computer_stale_passwords(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Computer accounts with stale passwords (configurable threshold)"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""

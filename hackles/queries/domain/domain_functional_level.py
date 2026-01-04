@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -32,7 +32,7 @@ RECOMMENDED_LEVEL = 7  # Windows Server 2016
     name="Domain Functional Level", category="Basic Info", default=True, severity=Severity.INFO
 )
 def get_domain_functional_level(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Check domain functional level - outdated levels miss security features."""
     domain_filter = "WHERE toUpper(d.name) = toUpper($domain)" if domain else ""

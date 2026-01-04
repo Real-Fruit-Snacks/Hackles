@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="RBCD Attack Targets", category="Delegation", default=True, severity=Severity.HIGH
 )
 def get_rbcd_targets(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find computers where non-admins can write msDS-AllowedToActOnBehalfOfOtherIdentity (RBCD)"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""
@@ -55,8 +55,8 @@ def get_rbcd_targets(
         print()
 
         # Count unique targets
-        unique_targets = len(set(r["target_computer"] for r in results))
-        unique_attackers = len(set(r["principal"] for r in results))
+        unique_targets = len({r["target_computer"] for r in results})
+        unique_attackers = len({r["principal"] for r in results})
         print_warning(
             f"    {unique_attackers} principal(s) can configure RBCD on {unique_targets} computer(s)"
         )

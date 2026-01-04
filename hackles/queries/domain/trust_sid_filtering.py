@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     name="Trust SID Filtering Analysis", category="Basic Info", default=True, severity=Severity.HIGH
 )
 def get_trust_sid_filtering(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find domain trusts with SID filtering disabled (cross-domain escalation risk)"""
     query = """
@@ -38,7 +38,7 @@ def get_trust_sid_filtering(
     print_subheader(f"Found {result_count} trust relationship(s)")
 
     if results:
-        vulnerable_count = sum(1 for r in results if r.get("sid_filtering") == False)
+        vulnerable_count = sum(1 for r in results if not r.get("sid_filtering"))
         if vulnerable_count:
             print_warning(f"[!] {vulnerable_count} trust(s) have SID filtering DISABLED!")
             print_warning("    SID History attacks possible across these trusts!")

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 @register_query(name="GPOs on DC OU", category="ACL Abuse", default=True, severity=Severity.HIGH)
 def get_gpos_dc_ou(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find GPOs linked to Domain Controllers OU"""
     domain_filter = "AND toUpper(ou.domain) = toUpper($domain)" if domain else ""

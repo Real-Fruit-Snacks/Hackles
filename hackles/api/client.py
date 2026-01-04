@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable
 from urllib.parse import urljoin
 
 import requests
@@ -16,7 +16,7 @@ class BloodHoundAPIError(Exception):
     """Exception raised for BloodHound API errors."""
 
     def __init__(
-        self, message: str, status_code: Optional[int] = None, response: Optional[str] = None
+        self, message: str, status_code: int | None = None, response: str | None = None
     ):
         super().__init__(message)
         self.message = message
@@ -76,7 +76,7 @@ class BloodHoundAPI:
         self,
         method: str,
         endpoint: str,
-        body: Optional[bytes] = None,
+        body: bytes | None = None,
         content_type: str = "application/json",
         timeout: int = 30,
     ) -> requests.Response:
@@ -122,7 +122,7 @@ class BloodHoundAPI:
         except BloodHoundAPIError:
             return False
 
-    def get_self(self) -> Dict[str, Any]:
+    def get_self(self) -> dict[str, Any]:
         """Get current user info.
 
         Returns:
@@ -206,12 +206,12 @@ class BloodHoundAPI:
         response = self._request("POST", endpoint)
         if response.status_code not in (200, 201, 202):
             raise BloodHoundAPIError(
-                f"Failed to end upload job",
+                "Failed to end upload job",
                 status_code=response.status_code,
                 response=response.text,
             )
 
-    def get_upload_job_status(self, job_id: str) -> Dict[str, Any]:
+    def get_upload_job_status(self, job_id: str) -> dict[str, Any]:
         """Get status of an upload job.
 
         Args:
@@ -242,7 +242,7 @@ class BloodHoundAPI:
         job_id: str,
         timeout: int = 300,
         poll_interval: int = 5,
-        callback: Optional[Callable[[Dict[str, Any]], None]] = None,
+        callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> bool:
         """Wait for ingestion to complete.
 
@@ -346,7 +346,7 @@ class BloodHoundAPI:
                 "Failed to clear database", status_code=response.status_code, response=response.text
             )
 
-    def get_file_upload_jobs(self) -> Dict[str, Any]:
+    def get_file_upload_jobs(self) -> dict[str, Any]:
         """Get list of all file upload jobs (ingest history).
 
         Returns:
@@ -364,7 +364,7 @@ class BloodHoundAPI:
             )
         return _parse_json_response(response)
 
-    def get_file_upload_tasks(self, job_id: str) -> Dict[str, Any]:
+    def get_file_upload_tasks(self, job_id: str) -> dict[str, Any]:
         """Get completed tasks for a specific file upload job.
 
         Args:

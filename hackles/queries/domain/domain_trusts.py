@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @register_query(name="Domain Trusts", category="Basic Info", default=True, severity=Severity.INFO)
 def get_domain_trusts(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get domain trust relationships"""
     query = """

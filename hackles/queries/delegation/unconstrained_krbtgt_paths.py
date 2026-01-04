@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
-from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.display.tables import print_header, print_subheader, print_warning
 from hackles.queries.base import register_query
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_unconstrained_to_dc_paths(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find attack paths from Unconstrained Delegation systems to Domain Controllers.
 

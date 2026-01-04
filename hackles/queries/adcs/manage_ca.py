@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 @register_query(
     name="ADCS ManageCA Rights (ESC7)", category="ADCS", default=True, severity=Severity.CRITICAL
 )
-def get_manage_ca(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
+def get_manage_ca(bh: BloodHoundCE, domain: str | None = None, severity: Severity = None) -> int:
     """Find non-admin principals with ManageCA rights (ESC7)"""
     domain_filter = "AND toUpper(ca.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}

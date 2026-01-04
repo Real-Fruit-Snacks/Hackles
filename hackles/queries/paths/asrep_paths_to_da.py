@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     severity=Severity.CRITICAL,
 )
 def get_asrep_paths_to_da(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find shortest paths from AS-REP roastable users to Domain Admins"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

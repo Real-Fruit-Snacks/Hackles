@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
-from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -18,7 +17,7 @@ if TYPE_CHECKING:
     name="Computers with Paths to DA", category="Attack Paths", default=True, severity=Severity.HIGH
 )
 def get_computers_to_da(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find computers that have attack paths to Domain Admins"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""

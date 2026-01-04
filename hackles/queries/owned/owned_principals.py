@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.config import config
 from hackles.core.cypher import node_type
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 @register_query(name="Owned Principals", category="Owned", default=True, severity=Severity.INFO)
 def get_owned_principals(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get all owned principals (BloodHound CE uses system_tags)"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -18,7 +17,7 @@ if TYPE_CHECKING:
     name="KRBTGT Password Age", category="Security Hygiene", default=True, severity=Severity.MEDIUM
 )
 def get_krbtgt_age(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """KRBTGT account password age"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     name="Local Admin Rights", category="Lateral Movement", default=True, severity=Severity.MEDIUM
 )
 def get_local_admin_rights(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get users/groups with local admin rights on computers"""
     domain_filter = "AND toUpper(c.domain) = toUpper($domain)" if domain else ""

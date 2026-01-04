@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from hackles.core.bloodhound import BloodHoundCE
 
 
-def calculate_exposure_metrics(bh: BloodHoundCE, domain: Optional[str] = None) -> Dict[str, Any]:
+def calculate_exposure_metrics(bh: BloodHoundCE, domain: str | None = None) -> dict[str, Any]:
     """Calculate domain exposure metrics for risk scoring.
 
     Returns a dictionary of metrics useful for assessing domain security posture.
@@ -132,7 +132,7 @@ def calculate_exposure_metrics(bh: BloodHoundCE, domain: Optional[str] = None) -
     return metrics
 
 
-def calculate_risk_score(metrics: Dict[str, Any]) -> int:
+def calculate_risk_score(metrics: dict[str, Any]) -> int:
     """Calculate an overall risk score from 0-100 based on exposure metrics.
 
     Higher score = higher risk.
@@ -141,14 +141,6 @@ def calculate_risk_score(metrics: Dict[str, Any]) -> int:
     max_score = 100
 
     # Weight factors (total should equal max_score potential)
-    weights = {
-        "pct_users_with_path_to_da": 25,  # Very high risk
-        "pct_computers_without_laps": 15,  # Medium risk
-        "kerberoastable_admins": 20,  # High risk
-        "asrep_roastable": 10,  # Medium risk
-        "unconstrained_delegation_non_dc": 15,  # High risk
-        "domain_admin_count": 15,  # More DAs = more attack surface
-    }
 
     # Path to DA (25 points max)
     pct_path = metrics.get("pct_users_with_path_to_da", 0)

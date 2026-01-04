@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
     name="Shadow Admins (Nested)", category="ACL Abuse", default=True, severity=Severity.HIGH
 )
 def get_shadow_admins(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find users with indirect admin rights through nested group memberships"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

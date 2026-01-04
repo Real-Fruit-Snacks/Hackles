@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     name="Container/OU ACL Abuse", category="ACL Abuse", default=True, severity=Severity.MEDIUM
 )
 def get_container_acl_abuse(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Dangerous ACLs on OUs/Containers (inherit to child objects)"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""

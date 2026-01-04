@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="ADCS ESC9 - No Security Extension", category="ADCS", default=True, severity=Severity.HIGH
 )
 def get_esc9_no_security_ext(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find ESC9 vulnerable configurations - CT_FLAG_NO_SECURITY_EXTENSION.
 

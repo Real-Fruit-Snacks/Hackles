@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     severity=Severity.MEDIUM,
 )
 def get_ldap_signing_disabled(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find Domain Controllers with LDAP signing disabled"""
     domain_filter = "AND toUpper(d.name) = toUpper($domain)" if domain else ""

@@ -12,16 +12,15 @@ import base64
 import hashlib
 import hmac
 from datetime import datetime
-from typing import Dict, Optional, Tuple
 
 
 def generate_signature(
     method: str,
     uri: str,
     token_key: str,
-    body: Optional[bytes] = None,
-    request_datetime: Optional[str] = None,
-) -> Tuple[str, str]:
+    body: bytes | None = None,
+    request_datetime: str | None = None,
+) -> tuple[str, str]:
     """Generate HMAC signature for BloodHound CE API request.
 
     Args:
@@ -56,8 +55,8 @@ def generate_signature(
 
 
 def build_auth_headers(
-    method: str, uri: str, token_id: str, token_key: str, body: Optional[bytes] = None
-) -> Dict[str, str]:
+    method: str, uri: str, token_id: str, token_key: str, body: bytes | None = None
+) -> dict[str, str]:
     """Build authentication headers for BloodHound CE API request.
 
     Args:

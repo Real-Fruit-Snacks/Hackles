@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     name="Non-Admin GPO Control", category="ACL Abuse", default=True, severity=Severity.HIGH
 )
 def get_gpo_control_privileged(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Find non-admin principals with control over GPOs"""
     domain_filter = "AND toUpper(gpo.domain) = toUpper($domain)" if domain else ""

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
@@ -29,7 +29,7 @@ def _targets_high_value(targets: list) -> str:
     name="Constrained Delegation", category="Delegation", default=True, severity=Severity.MEDIUM
 )
 def get_constrained_delegation(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get users and computers with constrained delegation"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""

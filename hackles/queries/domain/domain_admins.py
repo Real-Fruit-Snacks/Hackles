@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 @register_query(name="Domain Admins", category="Basic Info", default=True, severity=Severity.INFO)
 def get_domain_admins(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get domain admins with relevant security flags"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

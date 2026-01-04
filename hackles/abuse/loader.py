@@ -39,7 +39,7 @@ def load_abuse_templates(templates_dir: Optional[Path] = None) -> Dict[str, Any]
 
     for yaml_file in sorted(templates_dir.glob("*.yml")):
         try:
-            with open(yaml_file, "r", encoding="utf-8") as f:
+            with open(yaml_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
                 if data and "name" in data:
                     # Validate required fields

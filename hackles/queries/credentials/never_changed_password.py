@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     severity=Severity.MEDIUM,
 )
 def get_never_changed_password(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Active users who never changed their password"""
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""

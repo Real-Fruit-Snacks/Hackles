@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     severity=Severity.HIGH,
 )
 def get_delegatable_admins(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Admin accounts without 'Account is sensitive' flag (can be delegated)"""
     domain_filter = "WHERE toUpper(u.domain) = toUpper($domain)" if domain else ""

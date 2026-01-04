@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     name="ADCS Escalation Paths (ESC1-13)", category="ADCS", default=True, severity=Severity.HIGH
 )
 def get_adcs_escalation_paths(
-    bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None
+    bh: BloodHoundCE, domain: str | None = None, severity: Severity = None
 ) -> int:
     """Get all ADCS escalation paths (ESC1-ESC13)"""
     domain_filter = "AND toUpper(n.domain) = toUpper($domain)" if domain else ""
