@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.core.cypher import node_type
 
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ def get_privileged_ou_delegation(bh: BloodHoundCE, domain: Optional[str] = None,
         MATCH (p)-[:MemberOf*1..]->(g:Group)
         WHERE g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519'
     }}
-    RETURN p.name AS principal, labels(p)[1] AS principal_type,
+    RETURN p.name AS principal, {node_type('p')} AS principal_type,
            type(r) AS permission, ou.name AS ou_name, ou.domain AS domain
     ORDER BY ou.name, p.name
     """

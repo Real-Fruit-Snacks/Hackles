@@ -7,6 +7,7 @@ from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.abuse.printer import print_abuse_info
+from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ def get_userpassword_attribute(bh: BloodHoundCE, domain: Optional[str] = None, s
     MATCH (n)
     WHERE n.userpassword IS NOT NULL
     {domain_filter}
-    RETURN n.name AS name, labels(n)[1] AS type, n.userpassword AS password
+    RETURN n.name AS name, {node_type('n')} AS type, n.userpassword AS password
     """
     results = bh.run_query(query, params)
     result_count = len(results)

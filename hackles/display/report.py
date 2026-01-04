@@ -497,10 +497,11 @@ def generate_html_report(results: List[Dict[str, Any]], output_path: str) -> Non
 
                 # Limit to 100 rows for large result sets
                 display_data = result_data[:100]
-                data_rows = ''
+                data_row_list = []
                 for row in display_data:
                     cells = ''.join(f'<td>{_escape_html(row.get(c, ""))}</td>' for c in columns)
-                    data_rows += f'<tr>{cells}</tr>'
+                    data_row_list.append(f'<tr>{cells}</tr>')
+                data_rows = '\n'.join(data_row_list)
 
                 truncation_note = ''
                 if len(result_data) > 100:

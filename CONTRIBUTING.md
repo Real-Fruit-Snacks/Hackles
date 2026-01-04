@@ -72,6 +72,43 @@ references:
   - https://example.com/reference
 ```
 
+## Branch Naming Conventions
+
+Use descriptive branch names with these prefixes:
+- `feature/` - New features (e.g., `feature/add-azure-queries`)
+- `fix/` - Bug fixes (e.g., `fix/cypher-syntax-error`)
+- `docs/` - Documentation updates (e.g., `docs/update-readme`)
+- `refactor/` - Code refactoring (e.g., `refactor/query-registry`)
+- `test/` - Test additions or fixes (e.g., `test/add-cli-tests`)
+
+## Commit Message Guidelines
+
+Write clear, descriptive commit messages:
+
+**Format:**
+```
+<type>: <short summary>
+
+<optional detailed description>
+```
+
+**Types:**
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `refactor:` - Code refactoring
+- `test:` - Test additions or changes
+- `chore:` - Maintenance tasks
+
+**Examples:**
+```
+feat: Add ESC16 ADCS vulnerability query
+
+fix: Resolve Cypher syntax error in delegation query
+
+docs: Update README with new CLI options
+```
+
 ## Pull Request Process
 
 1. Fork the repository

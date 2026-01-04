@@ -26,11 +26,10 @@ def get_unconstrained_delegation(bh: BloodHoundCE, domain: Optional[str] = None,
 
     query = f"""
     MATCH (c:Computer {{unconstraineddelegation: true}})
-    WHERE NOT (c)-[:MemberOf*1..]->(:Group)
-        OR NOT EXISTS {{
-            MATCH (c)-[:MemberOf*1..]->(g:Group)
-            WHERE g.objectid ENDS WITH '-516'
-        }}
+    WHERE NOT EXISTS {{
+        MATCH (c)-[:MemberOf*1..]->(g:Group)
+        WHERE g.objectid ENDS WITH '-516'
+    }}
     {domain_filter}
     RETURN
         c.name AS name,

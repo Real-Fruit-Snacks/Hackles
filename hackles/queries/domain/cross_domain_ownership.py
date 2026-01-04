@@ -21,14 +21,14 @@ if TYPE_CHECKING:
 )
 def get_cross_domain_ownership(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severity = None) -> int:
     """Find objects owned by principals from different domains"""
-    query = """
+    query = f"""
     MATCH (owner)-[:Owns]->(target)
     WHERE owner.domain <> target.domain
     AND owner.domain IS NOT NULL
     AND target.domain IS NOT NULL
     RETURN owner.name AS owner, owner.domain AS owner_domain,
            target.name AS target_object, target.domain AS target_domain,
-           labels(target)[1] AS target_type
+           {node_type('target')} AS target_type
     ORDER BY owner.domain, target.domain
     LIMIT 100
     """

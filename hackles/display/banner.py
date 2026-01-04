@@ -1,5 +1,5 @@
 """Tool banner display"""
-from hackles.display.colors import Colors
+from hackles.display.colors import colors
 
 
 def print_banner():
@@ -12,4 +12,4 @@ def print_banner():
  | |  | | (_| | (__|   <| |  __/\__ \
  |_|  |_|\__,_|\___|_|\_\_|\___||___/
     """
-    print(f"{Colors.CYAN}{banner}{Colors.END}")
+    print(f"{colors.CYAN}{banner}{colors.END}")

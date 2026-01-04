@@ -97,4 +97,4 @@ def get_domain_functional_level(bh: BloodHoundCE, domain: Optional[str] = None, 
             display_results
         )
 
-    return outdated_count
+    return result_count

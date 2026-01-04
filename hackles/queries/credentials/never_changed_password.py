@@ -7,7 +7,6 @@ from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from datetime import datetime
-import time
 
 
 if TYPE_CHECKING:

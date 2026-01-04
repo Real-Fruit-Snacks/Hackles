@@ -7,6 +7,7 @@ from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.abuse.printer import print_abuse_info
+from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ def get_write_account_restrictions(bh: BloodHoundCE, domain: Optional[str] = Non
     WHERE NOT n.objectid ENDS WITH '-512'
       AND NOT n.objectid ENDS WITH '-519'
     {domain_filter}
-    RETURN n.name AS principal, labels(n)[1] AS type, c.name AS target
+    RETURN n.name AS principal, {node_type('n')} AS type, c.name AS target
     ORDER BY n.name
     """
     results = bh.run_query(query, params)

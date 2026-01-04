@@ -43,7 +43,7 @@ def get_service_accounts_interactive(bh: BloodHoundCE, domain: Optional[str] = N
     RETURN
         u.name AS service_account,
         u.displayname AS display_name,
-        u.serviceprincipalnames[0] AS primary_spn,
+        CASE WHEN size(u.serviceprincipalnames) > 0 THEN u.serviceprincipalnames[0] ELSE null END AS primary_spn,
         session_count,
         u.lastlogontimestamp AS last_logon,
         CASE WHEN u.admincount = true THEN 'Yes' ELSE 'No' END AS is_admin,

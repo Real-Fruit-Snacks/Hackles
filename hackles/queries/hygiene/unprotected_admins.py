@@ -26,7 +26,7 @@ def get_unprotected_admins(bh: BloodHoundCE, domain: Optional[str] = None, sever
     MATCH (u:User {{admincount: true, enabled: true}})
     WHERE NOT EXISTS {{
         MATCH (u)-[:MemberOf*1..]->(g:Group)
-        WHERE g.name STARTS WITH 'PROTECTED USERS@'
+        WHERE g.objectid ENDS WITH '-525'
     }}
     {domain_filter}
     RETURN u.name AS admin, u.description AS description

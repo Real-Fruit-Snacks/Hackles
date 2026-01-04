@@ -1,11 +1,11 @@
 """Table and header display functions"""
-from typing import List
+from typing import Any, Dict, List, Optional
 from prettytable import PrettyTable
-from hackles.display.colors import Colors, Severity
+from hackles.display.colors import colors, Severity
 from hackles.core.config import config
 
 
-def print_header(text: str, severity: Severity = None, result_count: int = None) -> bool:
+def print_header(text: str, severity: Optional[Severity] = None, result_count: Optional[int] = None) -> bool:
     """Print a section header with optional severity indicator.
 
     Returns True if output should continue, False if quiet mode and no results,
@@ -26,10 +26,10 @@ def print_header(text: str, severity: Severity = None, result_count: int = None)
                      result_count > 0)
 
     if show_severity:
-        sev_tag = f"{severity.color}[{severity.label}]{Colors.END} "
+        sev_tag = f"{severity.color}[{severity.label}]{colors.END} "
     else:
         sev_tag = ""
-    print(f"\n{Colors.BOLD}{Colors.BLUE}[*] {sev_tag}{text}{Colors.END}")
+    print(f"\n{colors.BOLD}{colors.BLUE}[*] {sev_tag}{text}{colors.END}")
     return True
 
 
@@ -37,37 +37,37 @@ def print_subheader(text: str):
     """Print a sub-section header (only in table mode)"""
     if config.output_format != 'table':
         return
-    print(f"    {Colors.GREEN}{text}{Colors.END}")
+    print(f"    {colors.GREEN}{text}{colors.END}")
 
 
 def print_warning(text: str):
     """Print a warning message (only in table mode)"""
     if config.output_format != 'table':
         return
-    print(f"    {Colors.WARNING}{text}{Colors.END}")
+    print(f"    {colors.WARNING}{text}{colors.END}")
 
 
-def print_severity_summary(severity_counts: dict):
-    """Print summary of findings by severity level (only in table mode)"""
+def print_severity_summary(severity_counts: Dict[Severity, int]) -> None:
+    """Print summary of findings by severity level (only in table mode)."""
     if config.output_format != 'table':
         return
 
     # Only print if there are any findings
     has_findings = any(count > 0 for sev, count in severity_counts.items() if sev != Severity.INFO)
     if not has_findings:
-        print(f"\n{Colors.GREEN}[+] No security findings detected{Colors.END}")
+        print(f"\n{colors.GREEN}[+] No security findings detected{colors.END}")
         return
 
-    print(f"\n{Colors.BOLD}[*] Findings Summary{Colors.END}")
+    print(f"\n{colors.BOLD}[*] Findings Summary{colors.END}")
     for sev in [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW]:
         count = severity_counts.get(sev, 0)
         if count > 0:
             label = "query" if count == 1 else "queries"
-            print(f"    {sev.color}{sev.label}{Colors.END}: {count} {label} with findings")
+            print(f"    {sev.color}{sev.label}{colors.END}: {count} {label} with findings")
 
 
-def print_table(headers: List[str], rows: List[List], max_width: int = 50):
-    """Print a formatted table with owned principal highlighting (only in table mode)"""
+def print_table(headers: List[str], rows: List[List[Any]], max_width: int = 50) -> None:
+    """Print a formatted table with owned principal highlighting (only in table mode)."""
     if config.output_format != 'table':
         return
 
@@ -93,15 +93,19 @@ def print_table(headers: List[str], rows: List[List], max_width: int = 50):
                 if val in config.owned_cache:
                     is_admin = config.owned_cache[val]
                     if is_admin:
-                        prefix = f"{Colors.FAIL}[!]{Colors.END} "  # Red for admin
+                        prefix = f"{colors.FAIL}[!]{colors.END} "  # Red for admin
                     else:
-                        prefix = f"{Colors.WARNING}[!]{Colors.END} "  # Yellow for non-admin
+                        prefix = f"{colors.WARNING}[!]{colors.END} "  # Yellow for non-admin
                     if len(val) > max_width - 4:
-                        formatted_row.append(prefix + val[:max_width-7] + "...")
+                        # Guard against negative slice index when max_width is very small
+                        truncate_at = max(1, max_width - 7)
+                        formatted_row.append(prefix + val[:truncate_at] + "...")
                     else:
                         formatted_row.append(prefix + val)
                 elif len(val) > max_width:
-                    formatted_row.append(val[:max_width-3] + "...")
+                    # Guard against negative slice index when max_width is very small
+                    truncate_at = max(1, max_width - 3)
+                    formatted_row.append(val[:truncate_at] + "...")
                 else:
                     formatted_row.append(val)
             else:
@@ -111,15 +115,15 @@ def print_table(headers: List[str], rows: List[List], max_width: int = 50):
     print(table)
 
 
-def print_node_info(node_props: dict):
-    """Pretty-print node properties (only in table mode)"""
+def print_node_info(node_props: Dict[str, Any]) -> None:
+    """Pretty-print node properties (only in table mode)."""
     if config.output_format != 'table':
         return
 
     labels = node_props.get("_labels", [])
 
-    print(f"    {Colors.BOLD}Labels:{Colors.END} {', '.join(labels)}")
-    print(f"    {Colors.BOLD}Properties:{Colors.END}")
+    print(f"    {colors.BOLD}Labels:{colors.END} {', '.join(labels)}")
+    print(f"    {colors.BOLD}Properties:{colors.END}")
 
     # Show security-relevant properties first
     priority_keys = ["name", "domain", "objectid", "enabled", "admincount",
@@ -142,8 +146,8 @@ def print_node_info(node_props: dict):
             if len(value) > 5:
                 value_str += f" (+{len(value)-5} more)"
         elif isinstance(value, bool):
-            value_str = f"{Colors.GREEN}True{Colors.END}" if value else f"{Colors.FAIL}False{Colors.END}"
+            value_str = f"{colors.GREEN}True{colors.END}" if value else f"{colors.FAIL}False{colors.END}"
         else:
             value_str = str(value)
 
-        print(f"      {Colors.CYAN}{key}:{Colors.END} {value_str}")
+        print(f"      {colors.CYAN}{key}:{colors.END} {value_str}")

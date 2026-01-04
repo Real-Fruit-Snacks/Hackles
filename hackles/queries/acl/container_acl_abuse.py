@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.core.cypher import node_type
 
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ def get_container_acl_abuse(bh: BloodHoundCE, domain: Optional[str] = None, seve
     WHERE NOT n.objectid ENDS WITH '-512'
       AND NOT n.objectid ENDS WITH '-519'
     {domain_filter}
-    RETURN n.name AS principal, labels(n)[1] AS type, type(r) AS permission, ou.name AS ou_name
+    RETURN n.name AS principal, {node_type('n')} AS type, type(r) AS permission, ou.name AS ou_name
     ORDER BY ou.name
     """
     results = bh.run_query(query, params)

@@ -35,8 +35,8 @@ def get_logon_scripts_foreign(bh: BloodHoundCE, domain: Optional[str] = None, se
     AND u.enabled = true
     WITH u,
         CASE
-            WHEN u.scriptpath CONTAINS '\\\\'
-            THEN split(replace(u.scriptpath, '\\\\', ''), '\\\\')[0]
+            WHEN u.scriptpath STARTS WITH '\\\\'
+            THEN split(substring(u.scriptpath, 2), '\\')[0]
             ELSE null
         END AS script_host
     WHERE script_host IS NOT NULL

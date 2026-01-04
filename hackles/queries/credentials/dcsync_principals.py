@@ -30,7 +30,7 @@ def get_dcsync_principals(bh: BloodHoundCE, domain: Optional[str] = None, severi
     MATCH (n)-[r:DCSync|GetChanges|GetChangesAll]->(d:Domain)
     {domain_filter.replace('AND', 'WHERE') if domain else ''}
     WITH n, d, collect(type(r)) AS rights
-    RETURN n.name AS principal, labels(n)[1] AS type,
+    RETURN n.name AS principal, {node_type('n')} AS type,
            d.name AS domain,
            'DCSync' IN rights OR ('GetChanges' IN rights AND 'GetChangesAll' IN rights) AS can_dcsync,
            'GetChanges' IN rights AS has_getchanges,

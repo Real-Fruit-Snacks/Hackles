@@ -7,6 +7,7 @@ from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.abuse.printer import print_abuse_info
+from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
 
 
@@ -30,9 +31,9 @@ def get_owns_relationships(bh: BloodHoundCE, domain: Optional[str] = None, sever
       AND NOT n.objectid ENDS WITH '-519'
       AND NOT n.objectid ENDS WITH '-544'
     {domain_filter}
-    RETURN n.name AS owner, labels(n)[1] AS owner_type,
-           m.name AS owned_object, labels(m)[1] AS object_type
-    ORDER BY labels(n)[1], n.name
+    RETURN n.name AS owner, {node_type('n')} AS owner_type,
+           m.name AS owned_object, {node_type('m')} AS object_type
+    ORDER BY {node_type('n')}, n.name
     LIMIT 100
     """
     results = bh.run_query(query, params)

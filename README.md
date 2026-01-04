@@ -1,8 +1,10 @@
 # Hackles
 
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Real-Fruit-Snacks/hackles/releases/tag/v2.0.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Neo4j 5.0+](https://img.shields.io/badge/neo4j-5.0+-green.svg)](https://neo4j.com/)
+[![GitHub stars](https://img.shields.io/github/stars/Real-Fruit-Snacks/hackles)](https://github.com/Real-Fruit-Snacks/hackles/stargazers)
 
 > **Extract quick wins from BloodHound Community Edition**
 
@@ -33,7 +35,7 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
 | **Path Finding** | Shortest paths to Domain Admin, Domain Controllers |
 | **Configurable Thresholds** | Customize stale days, path depth, result limits |
 | **Abuse Template Variables** | Pre-fill DC_IP, YOUR_PASSWORD, and other placeholders |
-| **BloodHound CE API** | Ingest data files and clear database without Neo4j access |
+| **BloodHound CE API** | Ingest data files, view ingest history, and clear database without Neo4j access |
 | **Shell Completion** | Tab completion for bash/zsh/fish |
 
 ---
@@ -287,6 +289,10 @@ python -m hackles --auth --api-url http://bloodhound.local:8080  # Custom URL
 python -m hackles --ingest *.zip
 python -m hackles --ingest bloodhound_data.json computers.json users.json
 
+# View file ingest history
+python -m hackles --ingest-history                    # Table output
+python -m hackles --ingest-history --json             # JSON output
+
 # Clear database (requires confirmation)
 python -m hackles --clear-database --delete-all              # Delete everything
 python -m hackles --clear-database --delete-all --yes        # Skip confirmation
@@ -468,6 +474,12 @@ pytest tests/ --cov=hackles
 - [ADCS Attack Paths - Part 1](https://posts.specterops.io/adcs-attack-paths-in-bloodhound-part-1-799f3d3b03cf)
 - [ADCS Attack Paths - Part 2](https://specterops.io/blog/2024/05/01/adcs-attack-paths-in-bloodhound-part-2/)
 - [Certified Pre-Owned](https://specterops.io/wp-content/uploads/sites/3/2022/06/Certified_Pre-Owned.pdf)
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
 ---
 

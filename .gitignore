@@ -1,7 +1,14 @@
+# ===========================
+# Python
+# ===========================
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# C extensions
+*.so
 
 # Distribution / packaging
 dist/
@@ -9,50 +16,172 @@ build/
 *.egg-info/
 *.egg
 .eggs/
+*.whl
+MANIFEST
+sdist/
 
-# Virtual environments
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ===========================
+# Virtual Environments
+# ===========================
 venv/
 env/
 .venv/
+.env/
+ENV/
+env.bak/
+venv.bak/
 
-# IDE
+# ===========================
+# IDE / Editors
+# ===========================
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+*.code-workspace
 
+# ===========================
 # Testing / Coverage
+# ===========================
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+pytest_cache/
+nosetests.xml
 
-# Output files
+# ===========================
+# Type Checking / Linting
+# ===========================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pytype/
+.pyre/
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ===========================
+# Environment / Secrets
+# ===========================
+.env
+.env.local
+.env.*.local
+*.local
+secrets.json
+secrets.yaml
+secrets.yml
+credentials.json
+credentials.yaml
+*.pem
+*.key
+.netrc
+
+# ===========================
+# Logs and Output
+# ===========================
+logs/
+*.log
+*.log.*
+Output.txt
+output.txt
+debug.txt
+error.txt
+
+# ===========================
+# Generated Reports
+# ===========================
+*_report.md
+*_analysis.md
+code_analysis_report.md
+fix_changelog.md
+fix_verification_report.md
+github_release_prep_report.md
+
+# ===========================
+# Output Files (Query Results)
+# ===========================
+# Note: These are excluded because hackles generates
+# output in these formats during normal operation
 *.html
 *.json
 *.csv
-Output.txt
+!.github/**/*.json
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Local development
-*.local
-.env
-
-# Claude Code
+# ===========================
+# Claude Code / AI Tools
+# ===========================
 CLAUDE.md
 .claude/
+.cursor/
+.aider*
 
-# Internal development files
+# ===========================
+# Project Development Files
+# ===========================
+# Internal development scripts and notes
 CODE_REVIEW.md
 QUERY_GAP_ANALYSIS.md
+TODO.md
+NOTES.md
+SCRATCH.md
 debug_owned.cypher
 test_query.cypher
+*.cypher
 test_all_features.sh
 test_bugfixes.sh
+test_*.sh
+scratch.py
+debug.py
+temp.py
+tmp.py
 
-# Test artifacts
-logs/
+# ===========================
+# Jupyter Notebooks
+# ===========================
+.ipynb_checkpoints/
+*.ipynb
+
+# ===========================
+# Documentation Build
+# ===========================
+docs/_build/
+site/
+
+# ===========================
+# Miscellaneous
+# ===========================
+*.bak
+*.tmp
+*.temp
+*.old
+*.orig
+.cache/
+*.cache

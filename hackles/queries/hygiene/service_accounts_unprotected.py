@@ -27,7 +27,7 @@ def get_service_accounts_unprotected(bh: BloodHoundCE, domain: Optional[str] = N
     WHERE NOT u.name STARTS WITH 'KRBTGT'
       AND NOT EXISTS {{
           MATCH (u)-[:MemberOf*1..]->(g:Group)
-          WHERE g.name STARTS WITH 'PROTECTED USERS@'
+          WHERE g.objectid ENDS WITH '-525'
       }}
     {domain_filter}
     RETURN u.name AS service_account, u.description AS description

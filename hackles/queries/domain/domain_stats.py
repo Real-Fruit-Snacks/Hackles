@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 from hackles.queries.base import register_query
-from hackles.display.colors import Colors, Severity
+from hackles.display.colors import colors, Severity
 from hackles.display.tables import print_header, print_subheader, print_table
 from hackles.core.config import config
 
@@ -109,10 +109,11 @@ def get_domain_stats(bh: BloodHoundCE, domain: Optional[str] = None, severity: S
     dc_results = bh.run_query(dc_query, params)
     dc_count = dc_results[0]["total"] if dc_results else 0
 
-    # Protected Users
+    # Protected Users - uses u.domain for filtering
+    user_domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""
     protected_query = f"""
     MATCH (u:User)-[:MemberOf*1..]->(g:Group)
-    WHERE g.objectid ENDS WITH '-525' {adcs_and}
+    WHERE g.objectid ENDS WITH '-525' {user_domain_filter}
     RETURN count(DISTINCT u) AS total
     """
     protected_results = bh.run_query(protected_query, params)
@@ -146,17 +147,17 @@ def get_domain_stats(bh: BloodHoundCE, domain: Optional[str] = None, severity: S
 
     # Color-coded risk rating
     rating_colors = {
-        "CRITICAL": Colors.FAIL,
-        "HIGH": Colors.FAIL,
-        "MEDIUM": Colors.WARNING,
-        "LOW": Colors.GREEN,
-        "MINIMAL": Colors.GREEN,
+        "CRITICAL": colors.FAIL,
+        "HIGH": colors.FAIL,
+        "MEDIUM": colors.WARNING,
+        "LOW": colors.GREEN,
+        "MINIMAL": colors.GREEN,
     }
-    color = rating_colors.get(rating, Colors.END)
+    color = rating_colors.get(rating, colors.END)
 
     print_subheader("Risk Assessment")
     if config.output_format == 'table':
-        print(f"    Risk Score: {color}{score}/100 ({rating}){Colors.END}")
+        print(f"    Risk Score: {color}{score}/100 ({rating}){colors.END}")
         print()
 
     risk_data = [

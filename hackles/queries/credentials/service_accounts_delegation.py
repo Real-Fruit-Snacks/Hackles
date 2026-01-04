@@ -48,7 +48,7 @@ def get_service_accounts_delegation(bh: BloodHoundCE, domain: Optional[str] = No
     RETURN
         u.name AS service_account,
         u.displayname AS display_name,
-        u.serviceprincipalnames[0] AS primary_spn,
+        CASE WHEN size(u.serviceprincipalnames) > 0 THEN u.serviceprincipalnames[0] ELSE null END AS primary_spn,
         targets AS delegation_targets,
         targets_dc AS targets_high_value,
         CASE WHEN u.unconstraineddelegation = true THEN 'Yes' ELSE 'No' END AS unconstrained

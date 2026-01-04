@@ -8,7 +8,6 @@ from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
 from hackles.core.config import config
 from datetime import datetime
-import time
 
 
 if TYPE_CHECKING:

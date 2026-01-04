@@ -9,7 +9,6 @@ from hackles.display.tables import print_header, print_subheader, print_table, p
 from hackles.abuse.printer import print_abuse_info
 from hackles.core.utils import extract_domain
 from datetime import datetime
-import time
 
 if TYPE_CHECKING:
     from hackles.core.bloodhound import BloodHoundCE

@@ -6,10 +6,10 @@ and privilege escalation opportunities from BloodHound Community Edition data.
 """
 
 __version__ = "2.0.0"
-__author__ = "Hackles Contributors"
+__author__ = "Real-Fruit-Snacks"
 
 from hackles.core.config import config
-from hackles.display.colors import Colors, Severity
+from hackles.display.colors import colors, Severity
 
 # Lazy imports to avoid requiring neo4j at import time
 def __getattr__(name):
@@ -24,7 +24,7 @@ def __getattr__(name):
 __all__ = [
     'BloodHoundCE',
     'config',
-    'Colors',
+    'colors',
     'Severity',
     'get_query_registry',
 ]

@@ -68,7 +68,7 @@ class Colors:
 
 
 # Singleton instance for property access
-Colors = Colors()
+colors = Colors()
 
 
 class Severity(Enum):

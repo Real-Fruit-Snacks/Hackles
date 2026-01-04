@@ -7,6 +7,7 @@ from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.abuse.printer import print_abuse_info
+from hackles.core.cypher import node_type
 from hackles.core.utils import extract_domain
 
 
@@ -32,7 +33,7 @@ def get_rbcd_targets(bh: BloodHoundCE, domain: Optional[str] = None, severity: S
         WHERE g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519'
     }}
     {domain_filter}
-    RETURN p.name AS principal, labels(p)[1] AS principal_type,
+    RETURN p.name AS principal, {node_type('p')} AS principal_type,
            c.name AS target_computer, c.domain AS domain,
            c.enabled AS enabled
     ORDER BY c.name, p.name

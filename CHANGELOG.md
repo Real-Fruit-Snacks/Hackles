@@ -5,9 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-01-03
 
 ### Added
+
+- **`--ingest-history` Command**: View file upload/ingest history from BloodHound CE API:
+  - Lists all file upload jobs with status, timestamps, and messages
+  - Supports `--json` and `--csv` output formats
+  - Color-coded status display (green=complete, red=failed, blue=running)
+  - Example: `hackles --ingest-history`, `hackles --ingest-history --json`
 
 - **BloodHound CE API Integration**: New API client for BloodHound CE operations (no Neo4j password required):
   - `--auth` - Authenticate to BloodHound CE and store API token in `~/.config/hackles/hackles.ini`
@@ -52,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Protected Users count
   - New "ADCS" and "Infrastructure" sections in table output
   - Added to JSON/CSV output formats
+
+### Fixed
+
+- **BloodHound CE API file upload status tracking**: Fixed incorrect API endpoint for checking upload job status. Was using `GET /api/v2/file-upload/{id}` (405 error), now correctly uses `GET /api/v2/file-upload?id=eq:{id}`
+- **Missing type imports**: Added missing `Dict` and `Any` imports to `bloodhound.py` that caused `NameError` on startup
+- **Improved API error messages**: `BloodHoundAPIError` now includes HTTP status code in error messages (e.g., "Failed to get job status (HTTP 404)")
+- **CLI validation for `--delete-*` flags**: Using `--delete-all`, `--delete-ad`, etc. without `--clear-database` now shows a helpful error instead of confusing "Neo4j password required" message
 
 ## [0.3.0] - 2025-12-30
 
@@ -266,7 +279,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable support for credentials
 - No hardcoded sensitive values
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.3.0...v2.0.0
 [0.3.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Real-Fruit-Snacks/hackles/releases/tag/v0.1.0

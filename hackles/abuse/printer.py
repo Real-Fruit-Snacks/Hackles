@@ -1,7 +1,7 @@
 """Abuse command display functions"""
 import re
 from typing import List, Dict, Any, Optional
-from hackles.display.colors import Colors
+from hackles.display.colors import colors
 from hackles.core.utils import extract_domain
 
 
@@ -126,7 +126,7 @@ def _build_context_from_result(result: Dict, domain: Optional[str] = None) -> Di
 
 def _highlight_placeholders(command: str) -> str:
     """Highlight remaining placeholders in yellow."""
-    return re.sub(r'(<[A-Z_]+>)', f'{Colors.WARNING}\\1{Colors.END}', command)
+    return re.sub(r'(<[A-Z_]+>)', f'{colors.WARNING}\\1{colors.END}', command)
 
 
 def _has_placeholders(command: str) -> bool:
@@ -186,17 +186,17 @@ def print_abuse_info(attack_type: str, results: List[Dict] = None, domain: Optio
         r = results[0]
         target_name = r.get('name') or r.get('target') or r.get('principal') or r.get('computer')
 
-    print(f"\n    {Colors.CYAN}{Colors.BOLD}[Abuse Info]{Colors.END}")
+    print(f"\n    {colors.CYAN}{colors.BOLD}[Abuse Info]{colors.END}")
 
     if info.get('description'):
-        print(f"    {Colors.WHITE}{info['description']}{Colors.END}")
+        print(f"    {colors.WHITE}{info['description']}{colors.END}")
 
     if target_name:
-        print(f"    {Colors.CYAN}Target:{Colors.END} {Colors.BOLD}{target_name}{Colors.END}")
+        print(f"    {colors.CYAN}Target:{colors.END} {colors.BOLD}{target_name}{colors.END}")
 
     if info.get('commands'):
         # Section 1: Generic Commands (templates)
-        print(f"\n    {Colors.BLUE}{Colors.BOLD}Commands:{Colors.END}")
+        print(f"\n    {colors.BLUE}{colors.BOLD}Commands:{colors.END}")
         for cmd in info['commands']:
             if not cmd:  # Empty line
                 print()
@@ -206,7 +206,7 @@ def print_abuse_info(attack_type: str, results: List[Dict] = None, domain: Optio
 
             # Comments get green color
             if cmd_str.strip().startswith('#'):
-                print(f"      {Colors.GREEN}{cmd_str}{Colors.END}")
+                print(f"      {colors.GREEN}{cmd_str}{colors.END}")
             else:
                 # Show template with placeholders highlighted in yellow
                 highlighted = _highlight_placeholders(cmd_str)
@@ -239,29 +239,29 @@ def print_abuse_info(attack_type: str, results: List[Dict] = None, domain: Optio
 
             # Only print header if we have commands to show
             if ready_commands:
-                print(f"\n    {Colors.GREEN}{Colors.BOLD}Ready-to-Paste:{Colors.END}")
+                print(f"\n    {colors.GREEN}{colors.BOLD}Ready-to-Paste:{colors.END}")
                 for filled in ready_commands:
-                    print(f"      {Colors.WHITE}{filled}{Colors.END}")
+                    print(f"      {colors.WHITE}{filled}{colors.END}")
 
     # Show all targets if multiple results
     if results and len(results) > 1:
-        print(f"\n    {Colors.CYAN}{Colors.BOLD}All Targets ({len(results)}):{Colors.END}")
+        print(f"\n    {colors.CYAN}{colors.BOLD}All Targets ({len(results)}):{colors.END}")
         for r in results[:10]:  # Limit to first 10
             target = r.get('name') or r.get('target') or r.get('principal') or r.get('computer')
             if target:
-                print(f"      {Colors.WHITE}- {target}{Colors.END}")
+                print(f"      {colors.WHITE}- {target}{colors.END}")
         if len(results) > 10:
-            print(f"      {Colors.GRAY}... and {len(results) - 10} more{Colors.END}")
+            print(f"      {colors.GRAY}... and {len(results) - 10} more{colors.END}")
 
     if info.get('opsec'):
-        print(f"\n    {Colors.WARNING}{Colors.BOLD}OPSEC:{Colors.END}")
+        print(f"\n    {colors.WARNING}{colors.BOLD}OPSEC:{colors.END}")
         for note in info['opsec']:
-            print(f"      {Colors.WARNING}- {note}{Colors.END}")
+            print(f"      {colors.WARNING}- {note}{colors.END}")
 
     if info.get('references'):
-        print(f"\n    {Colors.BLUE}References:{Colors.END}")
+        print(f"\n    {colors.BLUE}References:{colors.END}")
         for ref in info['references']:
-            print(f"      {Colors.GRAY}- {ref}{Colors.END}")
+            print(f"      {colors.GRAY}- {ref}{colors.END}")
 
 
 # Alias for backwards compatibility with any code importing from here

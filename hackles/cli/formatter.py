@@ -1,7 +1,7 @@
 """Custom argparse formatter with ANSI color support"""
 import argparse
 import sys
-from hackles.display.colors import Colors
+from hackles.display.colors import colors
 
 
 class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -11,10 +11,10 @@ class ColoredHelpFormatter(argparse.RawDescriptionHelpFormatter):
         if prefix is None:
             prefix = 'usage: '
         if sys.stdout.isatty():
-            prefix = f"{Colors.BOLD}{prefix}{Colors.END}"
+            prefix = f"{colors.BOLD}{prefix}{colors.END}"
         return super()._format_usage(usage, actions, groups, prefix)
 
     def start_section(self, heading):
         if sys.stdout.isatty() and heading:
-            heading = f"{Colors.CYAN}{heading}{Colors.END}"
+            heading = f"{colors.CYAN}{heading}{colors.END}"
         super().start_section(heading)

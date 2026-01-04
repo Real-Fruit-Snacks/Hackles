@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.core.cypher import node_type
 
 
 if TYPE_CHECKING:
@@ -28,8 +29,8 @@ def get_security_tools(bh: BloodHoundCE, domain: Optional[str] = None, severity:
     MATCH (n)
     WHERE toLower(n.name) CONTAINS tool OR toLower(COALESCE(n.description, '')) CONTAINS tool
     {domain_filter}
-    RETURN tool AS security_tool, labels(n)[1] AS type, n.name AS name
-    ORDER BY tool, labels(n)[1]
+    RETURN tool AS security_tool, {node_type('n')} AS type, n.name AS name
+    ORDER BY tool, {node_type('n')}
     """
     results = bh.run_query(query, params)
     result_count = len(results)

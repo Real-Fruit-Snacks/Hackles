@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.core.cypher import node_type
 
 
 if TYPE_CHECKING:
@@ -40,7 +41,7 @@ def get_busiest_paths(bh: BloodHoundCE, domain: Optional[str] = None, severity: 
                        'Owns', 'DCSync', 'GetChanges', 'GetChangesAll']
     WITH n, outbound_edges, count(r2) AS inbound_edges
     WHERE outbound_edges + inbound_edges > 5
-    RETURN n.name AS node, labels(n)[1] AS type, n.domain AS domain,
+    RETURN n.name AS node, {node_type('n')} AS type, n.domain AS domain,
            outbound_edges, inbound_edges,
            outbound_edges + inbound_edges AS total_edges
     ORDER BY total_edges DESC

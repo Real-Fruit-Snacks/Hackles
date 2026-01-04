@@ -15,9 +15,10 @@ Hackles is a security assessment tool designed for authorized penetration testin
 If you discover a security vulnerability in Hackles, please report it responsibly:
 
 1. **Do not** open a public GitHub issue for security vulnerabilities
-2. Email the maintainer directly with details of the vulnerability
-3. Include steps to reproduce the issue
-4. Allow reasonable time for a fix before public disclosure
+2. Open a private security advisory at [GitHub Security Advisories](https://github.com/Real-Fruit-Snacks/hackles/security/advisories/new)
+3. Alternatively, contact the maintainer via GitHub: [@Real-Fruit-Snacks](https://github.com/Real-Fruit-Snacks)
+4. Include steps to reproduce the issue
+5. Allow reasonable time for a fix before public disclosure
 
 ## Security Considerations
 
@@ -46,7 +47,9 @@ If you discover a security vulnerability in Hackles, please report it responsibl
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 2.0.x   | :white_check_mark: |
+| 0.3.x   | :white_check_mark: |
+| < 0.3   | :x:                |
 
 ## Responsible Use
 

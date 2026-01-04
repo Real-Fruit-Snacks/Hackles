@@ -26,11 +26,13 @@ def get_computers_to_da(bh: BloodHoundCE, domain: Optional[str] = None, severity
     params = {"domain": domain} if domain else {}
 
     query = f"""
+    MATCH (g:Group)
+    WHERE g.objectid ENDS WITH '-512'
+    WITH g
     MATCH (c:Computer)
     WHERE c.enabled = true
     {domain_filter}
-    MATCH (g:Group)
-    WHERE g.objectid ENDS WITH '-512'
+    WITH c, g
     MATCH p=shortestPath((c)-[*1..{config.max_path_depth}]->(g))
     WITH c, min(length(p)) AS path_length
     RETURN c.name AS computer, c.operatingsystem AS os,

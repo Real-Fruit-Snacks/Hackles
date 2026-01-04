@@ -39,6 +39,7 @@ def get_dcsync(bh: BloodHoundCE, domain: Optional[str] = None, severity: Severit
         {node_type('n')} AS type,
         d.name AS domain
     ORDER BY n.name
+    LIMIT 1000
     """
     results = bh.run_query(query, params)
     result_count = len(results)

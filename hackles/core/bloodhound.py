@@ -4,7 +4,7 @@ import time
 from typing import Optional, List, Union, Dict, Any
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, AuthError, Neo4jError
-from hackles.display.colors import Colors
+from hackles.display.colors import colors
 from hackles.core.cypher import node_type
 
 
@@ -65,20 +65,20 @@ class BloodHoundCE:
             self.driver.verify_connectivity()
             return True
         except AuthError as e:
-            print(f"{Colors.FAIL}[!] Authentication failed: {e}{Colors.END}")
+            print(f"{colors.FAIL}[!] Authentication failed: {e}{colors.END}")
         except ServiceUnavailable as e:
-            print(f"{Colors.FAIL}[!] Neo4j service unavailable: {e}{Colors.END}")
+            print(f"{colors.FAIL}[!] Neo4j service unavailable: {e}{colors.END}")
         except Neo4jError as e:
-            print(f"{Colors.FAIL}[!] Neo4j error: {e}{Colors.END}")
+            print(f"{colors.FAIL}[!] Neo4j error: {e}{colors.END}")
         except Exception as e:
-            print(f"{Colors.FAIL}[!] Connection failed: {e}{Colors.END}")
+            print(f"{colors.FAIL}[!] Connection failed: {e}{colors.END}")
 
-        # Clean up driver on any failure
+        # Clean up driver on any failure - ignore cleanup errors to ensure resource is released
         if self.driver:
             try:
                 self.driver.close()
-            except Exception:
-                pass
+            except (Neo4jError, OSError, RuntimeError):
+                pass  # Cleanup errors are non-critical
             self.driver = None
         return False
 
@@ -93,9 +93,9 @@ class BloodHoundCE:
         Results are also cached in _last_results for structured output modes.
         """
         if self.debug:
-            print(f"{Colors.CYAN}[DEBUG] Query: {query}{Colors.END}")
+            print(f"{colors.CYAN}[DEBUG] Query: {query}{colors.END}")
             if params:
-                print(f"{Colors.CYAN}[DEBUG] Params: {params}{Colors.END}")
+                print(f"{colors.CYAN}[DEBUG] Params: {params}{colors.END}")
 
         start_time = time.time()
         results = []
@@ -105,15 +105,15 @@ class BloodHoundCE:
                 result = session.run(query, params or {})
                 results = [dict(record) for record in result]
         except Neo4jError as e:
-            print(f"{Colors.FAIL}[!] Query error: {e}{Colors.END}")
+            print(f"{colors.FAIL}[!] Query error: {e}{colors.END}")
             raise  # Re-raise for caller to handle
         except Exception as e:
-            print(f"{Colors.FAIL}[!] Unexpected error during query: {e}{Colors.END}")
+            print(f"{colors.FAIL}[!] Unexpected error during query: {e}{colors.END}")
             raise
 
         elapsed = time.time() - start_time
         if self.debug:
-            print(f"{Colors.CYAN}[DEBUG] Query completed in {elapsed:.2f}s{Colors.END}")
+            print(f"{colors.CYAN}[DEBUG] Query completed in {elapsed:.2f}s{colors.END}")
 
         # Accumulate results for structured output modes (JSON/CSV/HTML)
         # This allows queries that run multiple sub-queries to capture all results
@@ -633,7 +633,9 @@ class BloodHoundCE:
         {domain_filter_u}
         OPTIONAL MATCH (u)-[:MemberOf*1..]->(g:Group)
         WHERE g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519'
-        RETURN u.name AS account, u.serviceprincipalnames[0] AS spn,
+        RETURN u.name AS account,
+               CASE WHEN u.serviceprincipalnames IS NOT NULL AND size(u.serviceprincipalnames) > 0
+                    THEN u.serviceprincipalnames[0] ELSE null END AS spn,
                CASE WHEN u.pwdlastset IS NOT NULL
                     THEN duration.inDays(datetime({{epochMillis: u.pwdlastset}}), datetime()).days
                     ELSE null END AS password_age_days,

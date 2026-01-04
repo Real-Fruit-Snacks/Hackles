@@ -162,6 +162,8 @@ def create_parser() -> argparse.ArgumentParser:
                           help='BloodHound CE API URL (default: http://localhost:8080)')
     api_group.add_argument('--ingest', nargs='+', metavar='FILE',
                           help='Ingest JSON/ZIP files into BloodHound (supports globs)')
+    api_group.add_argument('--ingest-history', action='store_true',
+                          help='Show file ingest history')
     api_group.add_argument('--api-config', metavar='FILE',
                           help='Path to API config file (default: ~/.config/hackles/hackles.ini)')
     api_group.add_argument('--clear-database', action='store_true',

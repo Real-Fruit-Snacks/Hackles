@@ -37,7 +37,7 @@ def get_service_accounts_admin(bh: BloodHoundCE, domain: Optional[str] = None, s
     RETURN
         u.name AS service_account,
         u.displayname AS display_name,
-        u.serviceprincipalnames[0] AS primary_spn,
+        CASE WHEN size(u.serviceprincipalnames) > 0 THEN u.serviceprincipalnames[0] ELSE null END AS primary_spn,
         computer_count,
         CASE
             WHEN computer_count > 10 THEN computers[0..10] + ['... +' + toString(computer_count - 10) + ' more']

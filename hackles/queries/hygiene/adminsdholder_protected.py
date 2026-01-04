@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
+from hackles.core.cypher import node_type
 
 
 if TYPE_CHECKING:
@@ -25,8 +26,8 @@ def get_adminsdholder_protected(bh: BloodHoundCE, domain: Optional[str] = None, 
     query = f"""
     MATCH (n {{admincount: true}})
     {domain_filter}
-    RETURN labels(n)[1] AS type, n.name AS name
-    ORDER BY labels(n)[1], n.name
+    RETURN {node_type('n')} AS type, n.name AS name
+    ORDER BY {node_type('n')}, n.name
     """
     results = bh.run_query(query, params)
     result_count = len(results)

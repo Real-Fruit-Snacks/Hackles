@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 from hackles.queries.base import register_query
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
+from hackles.core.cypher import node_type
 
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ def get_domain_users_dangerous_acls(bh: BloodHoundCE, domain: Optional[str] = No
     WHERE g.objectid ENDS WITH '-513'
     {domain_filter}
     RETURN type(r) AS edge,
-           labels(n)[1] AS target_type,
+           {node_type('n')} AS target_type,
            n.name AS target
     ORDER BY edge, target
     LIMIT 100

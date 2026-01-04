@@ -38,7 +38,7 @@ def get_non_admin_dcsync(bh: BloodHoundCE, domain: Optional[str] = None, severit
     MATCH (n)-[r:GetChanges|GetChangesAll]->(d)
     WITH n, d, collect(type(r)) AS rights
     WHERE 'GetChanges' IN rights OR 'GetChangesAll' IN rights
-    RETURN n.name AS principal, labels(n)[1] AS type, d.name AS domain,
+    RETURN n.name AS principal, {node_type('n')} AS type, d.name AS domain,
            'GetChanges' IN rights AS has_getchanges,
            'GetChangesAll' IN rights AS has_getchangesall,
            n.enabled AS enabled

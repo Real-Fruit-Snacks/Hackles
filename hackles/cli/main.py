@@ -13,7 +13,7 @@ from hackles.cli.completion import setup_completion
 from hackles.core.config import config
 from hackles.core.bloodhound import BloodHoundCE, _has_wildcard
 from hackles.display.banner import print_banner
-from hackles.display.colors import Colors, Severity
+from hackles.display.colors import colors, Severity
 from hackles.display.tables import (
     print_header, print_subheader, print_table, print_warning,
     print_node_info, print_severity_summary
@@ -105,7 +105,7 @@ def init_owned_cache(bh: BloodHoundCE) -> None:
         config.owned_cache = {r["name"]: r["is_admin"] for r in results if r.get("name")}
     except Exception as e:
         if config.debug_mode:
-            print(f"{Colors.WARNING}[!] Warning: Could not initialize owned cache: {e}{Colors.END}")
+            print(f"{colors.WARNING}[!] Warning: Could not initialize owned cache: {e}{colors.END}")
         config.owned_cache = {}
 
 
@@ -363,7 +363,7 @@ def do_auth(args) -> None:
     # Use URL from args (has default) or existing config
     url = args.api_url
 
-    print(f"\n{Colors.BLUE}[*] Create an API token in BloodHound CE:{Colors.END}")
+    print(f"\n{colors.BLUE}[*] Create an API token in BloodHound CE:{colors.END}")
     print(f"    Administration > API Tokens > Create Token")
     print()
 
@@ -371,27 +371,27 @@ def do_auth(args) -> None:
     token_key = input("Token Key: ").strip()
 
     if not token_id or not token_key:
-        print(f"{Colors.FAIL}[!] Token ID and Key are required{Colors.END}")
+        print(f"{colors.FAIL}[!] Token ID and Key are required{colors.END}")
         return
 
-    print(f"\n{Colors.BLUE}[*] Testing connection to {url}...{Colors.END}")
+    print(f"\n{colors.BLUE}[*] Testing connection to {url}...{colors.END}")
 
     try:
         api = BloodHoundAPI(url, token_id, token_key)
         if api.test_connection():
             user_info = api.get_self()
             user_name = user_info.get('data', {}).get('name', 'Unknown')
-            print(f"{Colors.GREEN}[+] Authentication successful!{Colors.END}")
+            print(f"{colors.GREEN}[+] Authentication successful!{colors.END}")
             print(f"    User: {user_name}")
 
             api_config.save(url=url, token_id=token_id, token_key=token_key)
-            print(f"{Colors.GREEN}[+] Credentials saved to {api_config.config_file}{Colors.END}")
+            print(f"{colors.GREEN}[+] Credentials saved to {api_config.config_file}{colors.END}")
         else:
-            print(f"{Colors.FAIL}[!] Authentication failed. Check your credentials.{Colors.END}")
+            print(f"{colors.FAIL}[!] Authentication failed. Check your credentials.{colors.END}")
     except BloodHoundAPIError as e:
-        print(f"{Colors.FAIL}[!] Connection error: {e}{Colors.END}")
+        print(f"{colors.FAIL}[!] Connection error: {e}{colors.END}")
     except Exception as e:
-        print(f"{Colors.FAIL}[!] Error: {e}{Colors.END}")
+        print(f"{colors.FAIL}[!] Error: {e}{colors.END}")
 
 
 def do_ingest(args) -> None:
@@ -403,7 +403,7 @@ def do_ingest(args) -> None:
     api_config = APIConfig(args.api_config)
 
     if not api_config.has_credentials():
-        print(f"{Colors.FAIL}[!] No API credentials found. Run --auth first.{Colors.END}")
+        print(f"{colors.FAIL}[!] No API credentials found. Run --auth first.{colors.END}")
         return
 
     url, token_id, token_key = api_config.get_credentials()
@@ -411,10 +411,10 @@ def do_ingest(args) -> None:
     # Expand file patterns
     files = expand_file_patterns(args.ingest)
     if not files:
-        print(f"{Colors.FAIL}[!] No matching files found{Colors.END}")
+        print(f"{colors.FAIL}[!] No matching files found{colors.END}")
         return
 
-    print(f"{Colors.BLUE}[*] Found {len(files)} file(s) to upload:{Colors.END}")
+    print(f"{colors.BLUE}[*] Found {len(files)} file(s) to upload:{colors.END}")
     for f in files:
         print(f"    - {f.name}")
     print()
@@ -423,9 +423,9 @@ def do_ingest(args) -> None:
 
     # Progress callback
     def progress(filename: str, current: int, total: int) -> None:
-        print(f"{Colors.BLUE}[*] Uploading ({current}/{total}): {filename}{Colors.END}")
+        print(f"{colors.BLUE}[*] Uploading ({current}/{total}): {filename}{colors.END}")
 
-    print(f"{Colors.BLUE}[*] Starting upload job...{Colors.END}")
+    print(f"{colors.BLUE}[*] Starting upload job...{colors.END}")
 
     try:
         result = ingest_files(
@@ -438,7 +438,7 @@ def do_ingest(args) -> None:
 
         print()
         if result['files_uploaded'] > 0:
-            print(f"{Colors.GREEN}[+] Upload complete!{Colors.END}")
+            print(f"{colors.GREEN}[+] Upload complete!{colors.END}")
             print(f"    Files uploaded: {result['files_uploaded']}")
             print(f"    Total size: {format_bytes(result['total_bytes'])}")
             if result['completed']:
@@ -447,15 +447,15 @@ def do_ingest(args) -> None:
                 print(f"    Ingestion: Pending (check BloodHound UI)")
 
         if result['files_failed'] > 0:
-            print(f"{Colors.WARNING}[!] Failed uploads: {result['files_failed']}{Colors.END}")
+            print(f"{colors.WARNING}[!] Failed uploads: {result['files_failed']}{colors.END}")
 
         for error in result['errors']:
-            print(f"{Colors.FAIL}    - {error}{Colors.END}")
+            print(f"{colors.FAIL}    - {error}{colors.END}")
 
     except BloodHoundAPIError as e:
-        print(f"{Colors.FAIL}[!] API error: {e}{Colors.END}")
+        print(f"{colors.FAIL}[!] API error: {e}{colors.END}")
     except Exception as e:
-        print(f"{Colors.FAIL}[!] Error: {e}{Colors.END}")
+        print(f"{colors.FAIL}[!] Error: {e}{colors.END}")
         if config.debug_mode:
             import traceback
             traceback.print_exc()
@@ -469,7 +469,7 @@ def do_clear_database(args) -> None:
     api_config = APIConfig(args.api_config)
 
     if not api_config.has_credentials():
-        print(f"{Colors.FAIL}[!] No API credentials found. Run --auth first.{Colors.END}")
+        print(f"{colors.FAIL}[!] No API credentials found. Run --auth first.{colors.END}")
         return
 
     # Check if --delete-all expands to all flags
@@ -483,7 +483,7 @@ def do_clear_database(args) -> None:
     # Require at least one deletion flag
     if not any([delete_ad, delete_azure, delete_sourceless,
                 delete_ingest_history, delete_quality_history]):
-        print(f"{Colors.WARNING}[!] No deletion options specified.{Colors.END}")
+        print(f"{colors.WARNING}[!] No deletion options specified.{colors.END}")
         print(f"    Use one or more of the following flags with --clear-database:")
         print(f"      --delete-all             Delete everything")
         print(f"      --delete-ad              Delete AD graph data")
@@ -508,7 +508,7 @@ def do_clear_database(args) -> None:
 
     url, token_id, token_key = api_config.get_credentials()
 
-    print(f"\n{Colors.WARNING}[!] WARNING: This will permanently delete the following:{Colors.END}")
+    print(f"\n{colors.WARNING}[!] WARNING: This will permanently delete the following:{colors.END}")
     for item in deletions:
         print(f"    - {item}")
     print(f"\n    Target: {url}")
@@ -516,19 +516,19 @@ def do_clear_database(args) -> None:
     # Require confirmation unless --yes is provided
     if not args.yes:
         if not sys.stdout.isatty():
-            print(f"{Colors.FAIL}[!] Non-interactive mode detected. Use --yes to confirm.{Colors.END}")
+            print(f"{colors.FAIL}[!] Non-interactive mode detected. Use --yes to confirm.{colors.END}")
             return
 
         try:
-            response = input(f"\n{Colors.BOLD}Type 'DELETE' to confirm: {Colors.END}").strip()
+            response = input(f"\n{colors.BOLD}Type 'DELETE' to confirm: {colors.END}").strip()
             if response != 'DELETE':
-                print(f"{Colors.BLUE}[*] Operation cancelled.{Colors.END}")
+                print(f"{colors.BLUE}[*] Operation cancelled.{colors.END}")
                 return
         except (KeyboardInterrupt, EOFError):
-            print(f"\n{Colors.BLUE}[*] Operation cancelled.{Colors.END}")
+            print(f"\n{colors.BLUE}[*] Operation cancelled.{colors.END}")
             return
 
-    print(f"\n{Colors.BLUE}[*] Clearing database...{Colors.END}")
+    print(f"\n{colors.BLUE}[*] Clearing database...{colors.END}")
 
     try:
         api = BloodHoundAPI(url, token_id, token_key)
@@ -539,14 +539,99 @@ def do_clear_database(args) -> None:
             delete_ingest_history=delete_ingest_history,
             delete_quality_history=delete_quality_history
         )
-        print(f"{Colors.GREEN}[+] Database cleared successfully!{Colors.END}")
+        print(f"{colors.GREEN}[+] Database cleared successfully!{colors.END}")
 
     except BloodHoundAPIError as e:
-        print(f"{Colors.FAIL}[!] API error: {e}{Colors.END}")
+        print(f"{colors.FAIL}[!] API error: {e}{colors.END}")
         if e.response:
             print(f"    Response: {e.response}")
     except Exception as e:
-        print(f"{Colors.FAIL}[!] Error: {e}{Colors.END}")
+        print(f"{colors.FAIL}[!] Error: {e}{colors.END}")
+        if config.debug_mode:
+            import traceback
+            traceback.print_exc()
+
+
+def do_ingest_history(args) -> None:
+    """Show file ingest history from BloodHound CE API."""
+    from hackles.api.client import BloodHoundAPI, BloodHoundAPIError
+    from hackles.api.config import APIConfig
+
+    api_config = APIConfig(args.api_config)
+    if not api_config.has_credentials():
+        print(f"{colors.FAIL}[!] No API credentials found. Run --auth first.{colors.END}")
+        return
+
+    url, token_id, token_key = api_config.get_credentials()
+
+    try:
+        api = BloodHoundAPI(url, token_id, token_key)
+        result = api.get_file_upload_jobs()
+        jobs = result.get('data', [])
+
+        if not jobs:
+            print(f"{colors.BLUE}[*] No ingest history found.{colors.END}")
+            return
+
+        # Handle different output formats
+        if config.output_format == 'json':
+            import json
+            print(json.dumps(jobs, indent=2, default=str))
+            return
+
+        if config.output_format == 'csv':
+            import csv
+            import sys
+            if jobs:
+                # Get all possible keys from jobs
+                fieldnames = ['id', 'status', 'start_time', 'end_time', 'status_message']
+                writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames, extrasaction='ignore')
+                writer.writeheader()
+                for job in jobs:
+                    writer.writerow(job)
+            return
+
+        # Table output
+        print(f"\n{colors.BLUE}[*] Ingest History ({len(jobs)} job(s)):{colors.END}\n")
+
+        table = PrettyTable()
+        table.field_names = ['ID', 'Status', 'Start Time', 'End Time', 'Message']
+        table.align = 'l'
+        table.max_width['Message'] = 40
+
+        for job in jobs:
+            job_id = str(job.get('id', ''))[:8]  # Truncate long IDs
+            status = job.get('status', 'unknown')
+            start_time = job.get('start_time', '')
+            end_time = job.get('end_time', '')
+            message = job.get('status_message', '')[:40] if job.get('status_message') else ''
+
+            # Format timestamps if present
+            if start_time and 'T' in str(start_time):
+                start_time = str(start_time).replace('T', ' ').split('.')[0]
+            if end_time and 'T' in str(end_time):
+                end_time = str(end_time).replace('T', ' ').split('.')[0]
+
+            # Color status
+            if status in ('complete', 'completed', 'ingested'):
+                status_display = f"{colors.GREEN}{status}{colors.END}"
+            elif status in ('failed', 'error'):
+                status_display = f"{colors.FAIL}{status}{colors.END}"
+            elif status in ('running', 'processing'):
+                status_display = f"{colors.BLUE}{status}{colors.END}"
+            else:
+                status_display = status
+
+            table.add_row([job_id, status_display, start_time, end_time, message])
+
+        print(table)
+
+    except BloodHoundAPIError as e:
+        print(f"{colors.FAIL}[!] API error: {e}{colors.END}")
+        if e.response:
+            print(f"    Response: {e.response}")
+    except Exception as e:
+        print(f"{colors.FAIL}[!] Error: {e}{colors.END}")
         if config.debug_mode:
             import traceback
             traceback.print_exc()
@@ -585,7 +670,7 @@ def main():
         valid_severities = {'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'}
         config.severity_filter = {s for s in severity_names if s in valid_severities}
         if not config.severity_filter:
-            print(f"{Colors.WARNING}[!] No valid severity levels provided. Valid: CRITICAL,HIGH,MEDIUM,LOW,INFO{Colors.END}")
+            print(f"{colors.WARNING}[!] No valid severity levels provided. Valid: CRITICAL,HIGH,MEDIUM,LOW,INFO{colors.END}")
             sys.exit(1)
 
     # Set user input enhancement config
@@ -612,7 +697,7 @@ def main():
                 key, value = var.split('=', 1)
                 config.abuse_vars[key.strip()] = value.strip()
             else:
-                print(f"{Colors.WARNING}[!] Invalid --abuse-var format: {var} (expected KEY=VALUE){Colors.END}")
+                print(f"{colors.WARNING}[!] Invalid --abuse-var format: {var} (expected KEY=VALUE){colors.END}")
 
     # === BLOODHOUND CE API OPERATIONS (no Neo4j required) ===
     if args.auth:
@@ -627,9 +712,21 @@ def main():
         do_clear_database(args)
         return
 
+    if args.ingest_history:
+        do_ingest_history(args)
+        return
+
+    # Check for delete flags without --clear-database
+    delete_flags = [args.delete_all, args.delete_ad, args.delete_azure,
+                    args.delete_sourceless, args.delete_ingest_history,
+                    args.delete_quality_history]
+    if any(delete_flags):
+        print(f"{colors.FAIL}[!] --delete-* flags require --clear-database{colors.END}")
+        sys.exit(1)
+
     # Require password for Neo4j operations
     if not args.password:
-        print(f"{Colors.FAIL}[!] Neo4j password required (-p/--password){Colors.END}")
+        print(f"{colors.FAIL}[!] Neo4j password required (-p/--password){colors.END}")
         sys.exit(1)
 
     # Helper to check if we should print status messages
@@ -641,55 +738,55 @@ def main():
     if not config.quiet_mode:
         print_banner()
 
-    status_print(f"\n{Colors.BLUE}[*] Connecting to {args.bolt}...{Colors.END}")
+    status_print(f"\n{colors.BLUE}[*] Connecting to {args.bolt}...{colors.END}")
     bh = BloodHoundCE(args.bolt, args.username, args.password, args.debug)
 
     if not bh.connect():
         sys.exit(1)
 
-    status_print(f"{Colors.GREEN}[+] Connected successfully{Colors.END}")
+    status_print(f"{colors.GREEN}[+] Connected successfully{colors.END}")
 
     # Handle ownership marking
     if args.own:
         for principal in args.own:
             if bh.mark_owned(principal):
-                status_print(f"{Colors.GREEN}[+] Marked as owned: {principal}{Colors.END}")
+                status_print(f"{colors.GREEN}[+] Marked as owned: {principal}{colors.END}")
             else:
-                status_print(f"{Colors.WARNING}[!] Principal not found: {principal}{Colors.END}")
+                status_print(f"{colors.WARNING}[!] Principal not found: {principal}{colors.END}")
 
     if args.unown:
         if bh.unmark_owned(args.unown):
-            status_print(f"{Colors.GREEN}[+] Removed owned status: {args.unown}{Colors.END}")
+            status_print(f"{colors.GREEN}[+] Removed owned status: {args.unown}{colors.END}")
         else:
-            status_print(f"{Colors.WARNING}[!] Principal not found: {args.unown}{Colors.END}")
+            status_print(f"{colors.WARNING}[!] Principal not found: {args.unown}{colors.END}")
 
     # Initialize owned cache
     init_owned_cache(bh)
     if config.owned_cache:
-        status_print(f"{Colors.BLUE}[*] Found {len(config.owned_cache)} owned principal(s){Colors.END}")
+        status_print(f"{colors.BLUE}[*] Found {len(config.owned_cache)} owned principal(s){colors.END}")
 
     try:
         # === CLEAR OWNED (early exit) ===
         if args.clear_owned:
             count = bh.clear_all_owned()
-            status_print(f"{Colors.GREEN}[+] Removed owned status from {count} principal(s){Colors.END}")
+            status_print(f"{colors.GREEN}[+] Removed owned status from {count} principal(s){colors.END}")
             init_owned_cache(bh)
-            status_print(f"{Colors.BLUE}[*] Owned cache now has {len(config.owned_cache)} principal(s){Colors.END}")
+            status_print(f"{colors.BLUE}[*] Owned cache now has {len(config.owned_cache)} principal(s){colors.END}")
             return
 
         # === TIER ZERO MARKING ===
         if args.tier_zero:
             for principal in args.tier_zero:
                 if bh.mark_tier_zero(principal):
-                    status_print(f"{Colors.GREEN}[+] Marked as Tier Zero: {principal}{Colors.END}")
+                    status_print(f"{colors.GREEN}[+] Marked as Tier Zero: {principal}{colors.END}")
                 else:
-                    status_print(f"{Colors.WARNING}[!] Principal not found: {principal}{Colors.END}")
+                    status_print(f"{colors.WARNING}[!] Principal not found: {principal}{colors.END}")
 
         if args.untier_zero:
             if bh.unmark_tier_zero(args.untier_zero):
-                status_print(f"{Colors.GREEN}[+] Removed Tier Zero status: {args.untier_zero}{Colors.END}")
+                status_print(f"{colors.GREEN}[+] Removed Tier Zero status: {args.untier_zero}{colors.END}")
             else:
-                status_print(f"{Colors.WARNING}[!] Principal not found: {args.untier_zero}{Colors.END}")
+                status_print(f"{colors.WARNING}[!] Principal not found: {args.untier_zero}{colors.END}")
 
         # Show tier zero and exit if no -a flag
         if (args.tier_zero or args.untier_zero) and not args.all:
@@ -783,7 +880,7 @@ def main():
                         ["Name", "Type", "Enabled", "Flags", "Outbound", "Inbound"],
                         rows
                     )
-                    print(f"\n    {Colors.CYAN}Tip: Run --investigate on a specific node for full details{Colors.END}")
+                    print(f"\n    {colors.CYAN}Tip: Run --investigate on a specific node for full details{colors.END}")
                 else:
                     print_warning(f"No nodes matching: {args.investigate}")
             else:
@@ -847,11 +944,11 @@ def main():
                     for e in edges_out[:15]:
                         rel = e["relationship"]
                         if rel in critical_edges:
-                            rel = f"{Colors.FAIL}{rel}{Colors.END}"
+                            rel = f"{colors.FAIL}{rel}{colors.END}"
                         rows.append([rel, e["target"], e["target_type"]])
                     print_table(["Relationship", "Target", "Type"], rows)
                     if len(edges_out) > 15:
-                        print(f"    {Colors.GRAY}... and {len(edges_out) - 15} more{Colors.END}")
+                        print(f"    {colors.GRAY}... and {len(edges_out) - 15} more{colors.END}")
 
                     # Show abuse templates for outbound edges if --abuse is set
                     if config.show_abuse:
@@ -890,7 +987,7 @@ def main():
                         rows.append([e["source"], e["source_type"], e["relationship"]])
                     print_table(["Source", "Type", "Relationship"], rows)
                     if len(edges_in) > 15:
-                        print(f"    {Colors.GRAY}... and {len(edges_in) - 15} more{Colors.END}")
+                        print(f"    {colors.GRAY}... and {len(edges_in) - 15} more{colors.END}")
 
                 # Type-specific sections
                 if node_type_str == "User":
@@ -901,7 +998,7 @@ def main():
                         rows = [[g["group_name"], g["tier_zero"]] for g in groups[:10]]
                         print_table(["Group", "Tier Zero"], rows)
                         if len(groups) > 10:
-                            print(f"    {Colors.GRAY}... and {len(groups) - 10} more{Colors.END}")
+                            print(f"    {colors.GRAY}... and {len(groups) - 10} more{colors.END}")
 
                     # Sessions (where is this user logged in)
                     sessions = bh.get_user_sessions(args.investigate)
@@ -917,7 +1014,7 @@ def main():
                         rows = [[a["computer"], a.get("os", "")] for a in admin_of[:10]]
                         print_table(["Computer", "OS"], rows)
                         if len(admin_of) > 10:
-                            print(f"    {Colors.GRAY}... and {len(admin_of) - 10} more{Colors.END}")
+                            print(f"    {colors.GRAY}... and {len(admin_of) - 10} more{colors.END}")
 
                     # Path to DA
                     paths = bh.find_path_to_da(args.investigate)
@@ -926,7 +1023,7 @@ def main():
                         for p in paths[:3]:
                             hops = p.get("path_length", 0)
                             path_str = " -> ".join(p.get("nodes", []))
-                            print(f"    {Colors.WARNING}[{hops} hops]{Colors.END} {path_str}")
+                            print(f"    {colors.WARNING}[{hops} hops]{colors.END} {path_str}")
 
                 elif node_type_str == "Computer":
                     # Sessions on this computer
@@ -943,7 +1040,7 @@ def main():
                         rows = [[a["principal"], a["type"], a.get("enabled", "")] for a in admins[:10]]
                         print_table(["Principal", "Type", "Enabled"], rows)
                         if len(admins) > 10:
-                            print(f"    {Colors.GRAY}... and {len(admins) - 10} more{Colors.END}")
+                            print(f"    {colors.GRAY}... and {len(admins) - 10} more{colors.END}")
 
                     # Group memberships
                     groups = bh.get_member_of(args.investigate)
@@ -960,7 +1057,7 @@ def main():
                         rows = [[m["member"], m["type"], m.get("admin", ""), m.get("enabled", "")] for m in members[:15]]
                         print_table(["Member", "Type", "Admin", "Enabled"], rows)
                         if len(members) > 15:
-                            print(f"    {Colors.GRAY}... and {len(members) - 15} more{Colors.END}")
+                            print(f"    {colors.GRAY}... and {len(members) - 15} more{colors.END}")
 
                     # Member of
                     parent_groups = bh.get_member_of(args.investigate)
@@ -1583,13 +1680,13 @@ def main():
                 return
 
             # Table output
-            print(f"\n{Colors.BOLD}{'='*70}")
+            print(f"\n{colors.BOLD}{'='*70}")
             print(f"{'QUICK WINS SUMMARY':^70}")
-            print(f"{'='*70}{Colors.END}\n")
+            print(f"{'='*70}{colors.END}\n")
 
             # Short paths to DA
             if results["short_paths_to_da"]:
-                print(f"{Colors.FAIL}[CRITICAL] Direct Paths to Domain Admins (1-2 hops){Colors.END}")
+                print(f"{colors.FAIL}[CRITICAL] Direct Paths to Domain Admins (1-2 hops){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Principal", "Hops", "Path"]
                 table.align = "l"
@@ -1605,11 +1702,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No direct paths (1-2 hops) to Domain Admins{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No direct paths (1-2 hops) to Domain Admins{colors.END}\n")
 
             # Kerberoastable admins
             if results["kerberoastable_admins"]:
-                print(f"{Colors.FAIL}[HIGH] Kerberoastable Admins (crack for instant privilege){Colors.END}")
+                print(f"{colors.FAIL}[HIGH] Kerberoastable Admins (crack for instant privilege){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Account", "SPN", "Password Age (days)", "Privilege"]
                 table.align = "l"
@@ -1623,11 +1720,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No Kerberoastable admin accounts{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No Kerberoastable admin accounts{colors.END}\n")
 
             # AS-REP roastable
             if results["asrep_roastable"]:
-                print(f"{Colors.WARNING}[HIGH] AS-REP Roastable (no pre-auth required){Colors.END}")
+                print(f"{colors.WARNING}[HIGH] AS-REP Roastable (no pre-auth required){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Account", "Admin"]
                 table.align = "l"
@@ -1636,11 +1733,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No AS-REP roastable accounts{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No AS-REP roastable accounts{colors.END}\n")
 
             # Direct ACL abuse
             if results["direct_acl_abuse"]:
-                print(f"{Colors.WARNING}[MEDIUM] Direct ACL Abuse to High Value Targets{Colors.END}")
+                print(f"{colors.WARNING}[MEDIUM] Direct ACL Abuse to High Value Targets{colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Principal", "Permission", "Target"]
                 table.align = "l"
@@ -1649,15 +1746,15 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No direct ACL abuse paths to high-value targets{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No direct ACL abuse paths to high-value targets{colors.END}\n")
 
             # Summary
             total = (len(results["short_paths_to_da"]) + len(results["kerberoastable_admins"]) +
                     len(results["asrep_roastable"]) + len(results["direct_acl_abuse"]))
             if total > 0:
-                print(f"{Colors.BOLD}Total quick wins found: {total}{Colors.END}")
+                print(f"{colors.BOLD}Total quick wins found: {total}{colors.END}")
             else:
-                print(f"{Colors.GREEN}No obvious quick wins found - deeper analysis required{Colors.END}")
+                print(f"{colors.GREEN}No obvious quick wins found - deeper analysis required{colors.END}")
             return
 
         # === SECURITY AUDIT ===
@@ -1711,13 +1808,13 @@ def main():
                 return
 
             # Table output
-            print(f"\n{Colors.BOLD}{'='*70}")
+            print(f"\n{colors.BOLD}{'='*70}")
             print(f"{'SECURITY AUDIT REPORT':^70}")
-            print(f"{'='*70}{Colors.END}\n")
+            print(f"{'='*70}{colors.END}\n")
 
             # Kerberoastable Admins
             if results["kerberoastable_admins"]:
-                print(f"{Colors.FAIL}[HIGH] Kerberoastable Admin Accounts ({len(results['kerberoastable_admins'])}){Colors.END}")
+                print(f"{colors.FAIL}[HIGH] Kerberoastable Admin Accounts ({len(results['kerberoastable_admins'])}){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Name", "Display Name"]
                 table.align = "l"
@@ -1726,11 +1823,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No Kerberoastable admin accounts{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No Kerberoastable admin accounts{colors.END}\n")
 
             # AS-REP Roastable
             if results["asrep_roastable"]:
-                print(f"{Colors.FAIL}[HIGH] AS-REP Roastable Users ({len(results['asrep_roastable'])}){Colors.END}")
+                print(f"{colors.FAIL}[HIGH] AS-REP Roastable Users ({len(results['asrep_roastable'])}){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Name", "Admin"]
                 table.align = "l"
@@ -1739,11 +1836,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No AS-REP roastable accounts{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No AS-REP roastable accounts{colors.END}\n")
 
             # Unconstrained Delegation
             if results["unconstrained_delegation"]:
-                print(f"{Colors.FAIL}[HIGH] Unconstrained Delegation (non-DC) ({len(results['unconstrained_delegation'])}){Colors.END}")
+                print(f"{colors.FAIL}[HIGH] Unconstrained Delegation (non-DC) ({len(results['unconstrained_delegation'])}){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Computer", "Operating System"]
                 table.align = "l"
@@ -1752,11 +1849,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No non-DC systems with unconstrained delegation{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No non-DC systems with unconstrained delegation{colors.END}\n")
 
             # Unsupported OS
             if results["unsupported_os"]:
-                print(f"{Colors.WARNING}[MEDIUM] Unsupported Operating Systems ({len(results['unsupported_os'])}){Colors.END}")
+                print(f"{colors.WARNING}[MEDIUM] Unsupported Operating Systems ({len(results['unsupported_os'])}){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Computer", "Operating System"]
                 table.align = "l"
@@ -1765,18 +1862,18 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No unsupported operating systems{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No unsupported operating systems{colors.END}\n")
 
             # Computers without LAPS
             no_laps = results.get("no_laps_count", 0)
             if no_laps > 0:
-                print(f"{Colors.WARNING}[MEDIUM] Computers without LAPS: {no_laps}{Colors.END}\n")
+                print(f"{colors.WARNING}[MEDIUM] Computers without LAPS: {no_laps}{colors.END}\n")
             else:
-                print(f"{Colors.GREEN}[+] All enabled computers have LAPS{Colors.END}\n")
+                print(f"{colors.GREEN}[+] All enabled computers have LAPS{colors.END}\n")
 
             # Guest Accounts Enabled
             if results["guest_enabled"]:
-                print(f"{Colors.FAIL}[HIGH] Guest Accounts Enabled ({len(results['guest_enabled'])}){Colors.END}")
+                print(f"{colors.FAIL}[HIGH] Guest Accounts Enabled ({len(results['guest_enabled'])}){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Name", "Domain"]
                 table.align = "l"
@@ -1785,11 +1882,11 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No enabled guest accounts{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No enabled guest accounts{colors.END}\n")
 
             # Admin Password Never Expires
             if results["pwd_never_expires_admins"]:
-                print(f"{Colors.WARNING}[MEDIUM] Admin Password Never Expires ({len(results['pwd_never_expires_admins'])}){Colors.END}")
+                print(f"{colors.WARNING}[MEDIUM] Admin Password Never Expires ({len(results['pwd_never_expires_admins'])}){colors.END}")
                 table = PrettyTable()
                 table.field_names = ["Name"]
                 table.align = "l"
@@ -1798,17 +1895,17 @@ def main():
                 print(table)
                 print()
             else:
-                print(f"{Colors.GREEN}[+] No admin accounts with password never expires{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No admin accounts with password never expires{colors.END}\n")
 
             # Users with Path to DA
             path_count = results.get("users_path_to_da", 0)
             if path_count > 0:
-                print(f"{Colors.FAIL}[HIGH] Users with Path to Domain Admins: {path_count}{Colors.END}\n")
+                print(f"{colors.FAIL}[HIGH] Users with Path to Domain Admins: {path_count}{colors.END}\n")
             else:
-                print(f"{Colors.GREEN}[+] No users with direct path to Domain Admins{Colors.END}\n")
+                print(f"{colors.GREEN}[+] No users with direct path to Domain Admins{colors.END}\n")
 
             # Summary
-            print(f"\n{Colors.BOLD}Audit Summary:{Colors.END}")
+            print(f"\n{colors.BOLD}Audit Summary:{colors.END}")
             print(f"  Kerberoastable Admins:      {len(results.get('kerberoastable_admins', []))}")
             print(f"  AS-REP Roastable:           {len(results.get('asrep_roastable', []))}")
             print(f"  Unconstrained Delegation:   {len(results.get('unconstrained_delegation', []))}")
@@ -1825,10 +1922,10 @@ def main():
             domains = bh.get_domains()
             domain_names = [d["name"].upper() for d in domains]
             if domain.upper() not in domain_names:
-                status_print(f"{Colors.FAIL}[!] Domain '{domain}' not found in database{Colors.END}")
+                status_print(f"{colors.FAIL}[!] Domain '{domain}' not found in database{colors.END}")
                 status_print(f"    Available domains: {', '.join(d['name'] for d in domains)}")
                 sys.exit(1)
-            status_print(f"{Colors.BLUE}[*] Filtering by domain: {domain}{Colors.END}")
+            status_print(f"{colors.BLUE}[*] Filtering by domain: {domain}{colors.END}")
 
         # Load custom queries if specified
         custom_queries = []
@@ -1839,9 +1936,9 @@ def main():
                     custom_queries.extend(loaded)
                     p = Path(path)
                     if p.is_dir():
-                        status_print(f"{Colors.GREEN}[+] Loaded {len(loaded)} custom query(ies) from {path}/{Colors.END}")
+                        status_print(f"{colors.GREEN}[+] Loaded {len(loaded)} custom query(ies) from {path}/{colors.END}")
                     else:
-                        status_print(f"{Colors.GREEN}[+] Loaded custom query: {loaded[0][0]}{Colors.END}")
+                        status_print(f"{colors.GREEN}[+] Loaded custom query: {loaded[0][0]}{colors.END}")
                 except Exception as e:
                     print_warning(f"Failed to load {path}: {e}")
 
@@ -1857,7 +1954,7 @@ def main():
             selected_queries = [(name, func, sev) for name, func, _, _, sev in get_query_registry()]
             # Add custom queries
             selected_queries.extend([(name, func, sev) for name, func, _, _, sev in custom_queries])
-            status_print(f"{Colors.BLUE}[*] Running all {len(selected_queries)} queries...{Colors.END}")
+            status_print(f"{colors.BLUE}[*] Running all {len(selected_queries)} queries...{colors.END}")
         elif selected_categories:
             # Run queries from selected categories
             registry = get_query_registry()
@@ -1868,14 +1965,14 @@ def main():
             # Add custom queries if specified
             selected_queries.extend([(name, func, sev) for name, func, _, _, sev in custom_queries])
             cat_str = ", ".join(selected_categories)
-            status_print(f"{Colors.BLUE}[*] Running {len(selected_queries)} queries from: {cat_str}{Colors.END}")
+            status_print(f"{colors.BLUE}[*] Running {len(selected_queries)} queries from: {cat_str}{colors.END}")
         elif custom_queries:
             # Custom queries only
             selected_queries = [(name, func, sev) for name, func, _, _, sev in custom_queries]
-            status_print(f"{Colors.BLUE}[*] Running {len(selected_queries)} custom queries...{Colors.END}")
+            status_print(f"{colors.BLUE}[*] Running {len(selected_queries)} custom queries...{colors.END}")
         else:
             # No queries selected - show help
-            status_print(f"{Colors.WARNING}[!] No queries selected. Use -a for all, or specify categories:{Colors.END}")
+            status_print(f"{colors.WARNING}[!] No queries selected. Use -a for all, or specify categories:{colors.END}")
             status_print(f"    --acl        ACL Abuse queries")
             status_print(f"    --adcs       ADCS/Certificate queries")
             status_print(f"    --privesc    Privilege Escalation queries")
@@ -1893,7 +1990,7 @@ def main():
             return
 
         if not selected_queries:
-            status_print(f"{Colors.WARNING}[!] No queries matched the selected categories{Colors.END}")
+            status_print(f"{colors.WARNING}[!] No queries matched the selected categories{colors.END}")
             return
 
         # Apply severity filter
@@ -1904,11 +2001,11 @@ def main():
             ]
             skipped = len(selected_queries) - len(filtered_queries)
             if skipped > 0:
-                status_print(f"{Colors.BLUE}[*] Filtered to {len(filtered_queries)} queries (skipped {skipped} by severity){Colors.END}")
+                status_print(f"{colors.BLUE}[*] Filtered to {len(filtered_queries)} queries (skipped {skipped} by severity){colors.END}")
             selected_queries = filtered_queries
 
         if not selected_queries:
-            status_print(f"{Colors.WARNING}[!] No queries match the severity filter: {', '.join(config.severity_filter)}{Colors.END}")
+            status_print(f"{colors.WARNING}[!] No queries match the severity filter: {', '.join(config.severity_filter)}{colors.END}")
             return
 
         if config.output_format == 'table':
@@ -1933,7 +2030,7 @@ def main():
 
                 # Show per-query timing in debug mode
                 if config.debug_mode and config.output_format == 'table':
-                    print(f"    {Colors.CYAN}[{elapsed:.2f}s]{Colors.END}")
+                    print(f"    {colors.CYAN}[{elapsed:.2f}s]{colors.END}")
 
                 # For structured output, retrieve accumulated results from the query
                 if config.output_format != 'table':
@@ -1945,7 +2042,7 @@ def main():
             except Exception as e:
                 elapsed = time.time() - query_start
                 if config.output_format == 'table':
-                    print(f"{Colors.FAIL}[!] Error running '{name}': {e}{Colors.END}")
+                    print(f"{colors.FAIL}[!] Error running '{name}': {e}{colors.END}")
                     if config.debug_mode:
                         import traceback
                         traceback.print_exc()
@@ -2011,19 +2108,19 @@ def main():
         elif config.output_format == 'html':
             from hackles.display.report import generate_html_report
             generate_html_report(all_results, args.html)
-            print(f"{Colors.GREEN}[+] HTML report saved to: {args.html}{Colors.END}")
+            print(f"{colors.GREEN}[+] HTML report saved to: {args.html}{colors.END}")
             print_severity_summary(severity_counts)
-            print(f"\n{Colors.GREEN}[+] Analysis completed in {elapsed:.2f}s{Colors.END}")
+            print(f"\n{colors.GREEN}[+] Analysis completed in {elapsed:.2f}s{colors.END}")
             print(f"    Ran {len(selected_queries)} queries")
         else:
             # Table output - already printed during execution
             print_severity_summary(severity_counts)
-            print(f"\n{Colors.GREEN}[+] Analysis completed in {elapsed:.2f}s{Colors.END}")
+            print(f"\n{colors.GREEN}[+] Analysis completed in {elapsed:.2f}s{colors.END}")
             print(f"    Ran {len(selected_queries)} queries")
 
         # Show timing summary in debug mode
         if config.debug_mode and query_timings and config.output_format == 'table':
-            print(f"\n{Colors.CYAN}[*] Query Timing Summary (slowest first){Colors.END}")
+            print(f"\n{colors.CYAN}[*] Query Timing Summary (slowest first){colors.END}")
             sorted_timings = sorted(query_timings, key=lambda x: -x[1])[:10]
             for name, timing, count in sorted_timings:
                 print(f"    {timing:.2f}s - {name} ({count} results)")

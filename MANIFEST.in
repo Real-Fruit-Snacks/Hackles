@@ -1,0 +1,30 @@
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
+
+# Include package data
+recursive-include hackles/abuse/templates *.yml
+
+# Include requirements files
+include requirements.txt
+include requirements-dev.txt
+
+# Exclude development files
+exclude .pre-commit-config.yaml
+exclude .gitignore
+exclude CLAUDE.md
+prune .claude
+prune .github
+prune tests
+prune logs
+prune htmlcov
+prune .pytest_cache
+prune .mypy_cache
+prune .ruff_cache
+prune __pycache__
+global-exclude *.py[cod]
+global-exclude *~
+global-exclude .DS_Store

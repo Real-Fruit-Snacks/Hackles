@@ -34,6 +34,7 @@ def get_asrep_roastable(bh: BloodHoundCE, domain: Optional[str] = None, severity
         u.admincount AS admincount,
         u.description AS description
     ORDER BY u.admincount DESC, u.name
+    LIMIT 1000
     """
     results = bh.run_query(query, params)
     result_count = len(results)

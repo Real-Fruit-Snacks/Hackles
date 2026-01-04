@@ -85,11 +85,16 @@ class APIConfig:
         except OSError:
             pass  # May fail on Windows
 
-        # Write config file
-        with open(self.config_file, 'w', encoding='utf-8') as f:
-            self._config.write(f)
+        # Write config file with restrictive permissions from the start
+        # Use umask to ensure file is created with 0o600 permissions
+        old_umask = os.umask(0o077)
+        try:
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                self._config.write(f)
+        finally:
+            os.umask(old_umask)
 
-        # Set restrictive permissions on file
+        # Explicitly set permissions (in case file already existed)
         try:
             os.chmod(self.config_file, 0o600)
         except OSError:

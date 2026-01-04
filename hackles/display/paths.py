@@ -1,7 +1,7 @@
 """Attack path display functions"""
 from typing import List, Dict
 from prettytable import PrettyTable
-from hackles.display.colors import Colors
+from hackles.display.colors import colors
 from hackles.display.tables import print_warning
 from hackles.core.config import config
 
@@ -24,9 +24,9 @@ def _format_node_with_owned(node_name: str, use_short: bool = True) -> str:
     if node_name in config.owned_cache:
         is_admin = config.owned_cache[node_name]
         if is_admin:
-            return f"{Colors.FAIL}[!]{Colors.END}{short_name}"
+            return f"{colors.FAIL}[!]{colors.END}{short_name}"
         else:
-            return f"{Colors.WARNING}[!]{Colors.END}{short_name}"
+            return f"{colors.WARNING}[!]{colors.END}{short_name}"
     return short_name
 
 
@@ -94,7 +94,7 @@ def print_paths_grouped(results: List[Dict], max_display: int = MAX_PATHS_DISPLA
 
     # Show summary of hidden paths
     if hidden_count > 0:
-        print(f"    {Colors.GRAY}... and {hidden_count} more path(s) not shown{Colors.END}")
+        print(f"    {colors.GRAY}... and {hidden_count} more path(s) not shown{colors.END}")
 
 
 def print_path(path_data: dict):
@@ -135,23 +135,23 @@ def print_paths_detailed(results: List[Dict], max_display: int = 5):
             continue
 
         path_len = r.get("path_length", len(nodes) - 1)
-        print(f"    {Colors.BOLD}Path ({path_len} hop{'s' if path_len != 1 else ''}):{Colors.END}")
+        print(f"    {colors.BOLD}Path ({path_len} hop{'s' if path_len != 1 else ''}):{colors.END}")
 
         for i, node in enumerate(nodes):
             type_str = f"({node_types[i]})" if i < len(node_types) else ""
 
             if node in config.owned_cache:
                 is_admin = config.owned_cache[node]
-                marker = f"{Colors.FAIL}[!]{Colors.END}" if is_admin else f"{Colors.WARNING}[!]{Colors.END}"
+                marker = f"{colors.FAIL}[!]{colors.END}" if is_admin else f"{colors.WARNING}[!]{colors.END}"
                 print(f"      {marker} {node} {type_str}")
             else:
                 print(f"      {node} {type_str}")
 
             if i < len(rels):
-                print(f"        {Colors.CYAN}--[{rels[i]}]-->{Colors.END}")
+                print(f"        {colors.CYAN}--[{rels[i]}]-->{colors.END}")
 
     if hidden_count > 0:
-        print(f"    {Colors.GRAY}... and {hidden_count} more path(s) not shown{Colors.END}")
+        print(f"    {colors.GRAY}... and {hidden_count} more path(s) not shown{colors.END}")
 
 
 def print_paths_summary(results: List[Dict]):

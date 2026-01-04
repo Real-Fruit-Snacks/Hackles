@@ -113,6 +113,14 @@ def ingest_files(
             progress_callback(file_path.name, idx, total_files)
 
         try:
+            # Check file size to prevent memory exhaustion
+            MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
+            file_size = file_path.stat().st_size
+            if file_size > MAX_FILE_SIZE:
+                result['files_failed'] += 1
+                result['errors'].append(f"{file_path.name}: File too large ({file_size / (1024*1024):.1f} MB > 500 MB limit)")
+                continue
+
             content = file_path.read_bytes()
             content_type = get_content_type(file_path)
 
