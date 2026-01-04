@@ -1,6 +1,6 @@
 """Pytest fixtures for hackles tests"""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -73,14 +73,43 @@ def sample_path_results():
 
 @pytest.fixture
 def mock_config():
-    """Mock config module for testing."""
-    with patch("hackles.core.config.config") as mock:
-        mock.quiet_mode = False
-        mock.show_abuse = False
-        mock.debug_mode = False
-        mock.no_color = True
-        mock.output_format = "table"
-        mock.owned_cache = {}
-        mock.severity_filter = None
-        mock.show_progress = False
-        yield mock
+    """Configure the real config object for testing.
+
+    Rather than patching the config module (which doesn't work well due to
+    import caching), we configure the real singleton with test-appropriate values.
+    """
+    from hackles.core.config import config
+
+    # Save original values
+    original_values = {
+        "quiet_mode": config.quiet_mode,
+        "show_abuse": config.show_abuse,
+        "debug_mode": config.debug_mode,
+        "no_color": config.no_color,
+        "output_format": config.output_format,
+        "owned_cache": config.owned_cache.copy(),
+        "severity_filter": config.severity_filter.copy(),
+        "show_progress": config.show_progress,
+    }
+
+    # Set test values
+    config.quiet_mode = False
+    config.show_abuse = False
+    config.debug_mode = False
+    config.no_color = True
+    config.output_format = "table"
+    config.owned_cache = {}
+    config.severity_filter = set()
+    config.show_progress = False
+
+    yield config
+
+    # Restore original values
+    config.quiet_mode = original_values["quiet_mode"]
+    config.show_abuse = original_values["show_abuse"]
+    config.debug_mode = original_values["debug_mode"]
+    config.no_color = original_values["no_color"]
+    config.output_format = original_values["output_format"]
+    config.owned_cache = original_values["owned_cache"]
+    config.severity_filter = original_values["severity_filter"]
+    config.show_progress = original_values["show_progress"]

@@ -13,13 +13,15 @@ class TestCliParser:
         parser = create_parser()
         assert parser is not None
 
-    def test_required_password_argument(self):
-        """Test password is required."""
+    def test_password_argument_optional_at_parser(self):
+        """Test password is optional at parser level (validated in main())."""
         from hackles.cli.parser import create_parser
 
         parser = create_parser()
-        with pytest.raises(SystemExit):
-            parser.parse_args([])
+        # Password is not required at argparse level - validated later in main()
+        # This allows API operations (--auth, --ingest, --clear-database) without -p
+        args = parser.parse_args([])
+        assert args.password is None
 
     def test_default_values(self):
         """Test default argument values."""
