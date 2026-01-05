@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -37,6 +35,9 @@ def get_computer_delegation(
         OR (c.allowedtodelegate IS NOT NULL AND size(c.allowedtodelegate) > 0))
     AND c.enabled = true
     {domain_filter}
+    OPTIONAL MATCH (c)-[:MemberOf*1..]->(dcg:Group)
+    WHERE dcg.objectid ENDS WITH '-516'
+    WITH c, dcg
     RETURN
         c.name AS computer,
         c.operatingsystem AS os,
@@ -47,7 +48,7 @@ def get_computer_delegation(
             WHEN c.allowedtodelegate IS NOT NULL THEN 'Constrained'
             ELSE 'None'
         END AS delegation_type,
-        CASE WHEN c.objectid ENDS WITH '-516' THEN 'Yes' ELSE 'No' END AS is_dc
+        CASE WHEN dcg IS NOT NULL THEN 'Yes' ELSE 'No' END AS is_dc
     ORDER BY c.unconstraineddelegation DESC, c.name
     LIMIT 100
     """
@@ -95,18 +96,5 @@ def get_computer_delegation(
                 for r in results
             ],
         )
-
-        # Different abuse info based on delegation type
-        unconstrained_results = [r for r in results if r.get("unconstrained") == "Yes"]
-        constrained_results = [r for r in results if r.get("unconstrained") != "Yes"]
-
-        if unconstrained_results:
-            print_abuse_info(
-                "UnconstrainedDelegation", unconstrained_results, extract_domain(results, domain)
-            )
-        if constrained_results:
-            print_abuse_info(
-                "ConstrainedDelegation", constrained_results, extract_domain(results, domain)
-            )
 
     return result_count

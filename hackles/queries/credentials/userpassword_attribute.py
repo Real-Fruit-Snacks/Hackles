@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -32,7 +30,7 @@ def get_userpassword_attribute(
     MATCH (n)
     WHERE n.userpassword IS NOT NULL
     {domain_filter}
-    RETURN n.name AS name, {node_type('n')} AS type, n.userpassword AS password
+    RETURN n.name AS name, {node_type("n")} AS type, n.userpassword AS password
     """
     results = bh.run_query(query, params)
     result_count = len(results)
@@ -46,6 +44,5 @@ def get_userpassword_attribute(
         print_table(
             ["Name", "Type", "Password"], [[r["name"], r["type"], r["password"]] for r in results]
         )
-        print_abuse_info("PlaintextPassword", results, extract_domain(results, domain))
 
     return result_count

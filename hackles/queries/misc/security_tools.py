@@ -29,8 +29,8 @@ def get_security_tools(
     MATCH (n)
     WHERE toLower(n.name) CONTAINS tool OR toLower(COALESCE(n.description, '')) CONTAINS tool
     {domain_filter}
-    RETURN tool AS security_tool, {node_type('n')} AS type, n.name AS name
-    ORDER BY tool, {node_type('n')}
+    RETURN tool AS security_tool, {node_type("n")} AS type, n.name AS name
+    ORDER BY tool, {node_type("n")}
     """
     results = bh.run_query(query, params)
     result_count = len(results)

@@ -33,9 +33,9 @@ def get_high_value_targets(
     {domain_filter}
     RETURN
         n.name AS name,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         n.description AS description
-    ORDER BY {node_type('n')}, n.name
+    ORDER BY {node_type("n")}, n.name
     """
     results = bh.run_query(query, params)
     result_count = len(results)

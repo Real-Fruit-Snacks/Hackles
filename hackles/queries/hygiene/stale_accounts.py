@@ -60,7 +60,7 @@ def get_stale_accounts(
             if epoch and epoch > 0:
                 try:
                     return time.strftime("%Y-%m-%d", time.localtime(epoch))
-                except:
+                except (ValueError, OSError, OverflowError):
                     return "Unknown"
             return "Never"
 

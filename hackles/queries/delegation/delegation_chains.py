@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -46,7 +44,10 @@ def get_delegation_chains(
     WITH start, target, split(split(target, '/')[1], '.')[0] AS target_host
     OPTIONAL MATCH (dc:Computer)
     WHERE toUpper(dc.name) STARTS WITH toUpper(target_host)
-    AND (dc.objectid ENDS WITH '-516' OR dc:Tag_Tier_Zero)
+    AND (EXISTS {{
+        MATCH (dc)-[:MemberOf*1..]->(dcg:Group)
+        WHERE dcg.objectid ENDS WITH '-516'
+    }} OR dc:Tag_Tier_Zero)
     WITH start, target, dc
     WHERE dc IS NOT NULL
     RETURN DISTINCT
@@ -86,6 +87,5 @@ def get_delegation_chains(
                 for r in results
             ],
         )
-        print_abuse_info("ConstrainedDelegation", results, extract_domain(results, domain))
 
     return result_count

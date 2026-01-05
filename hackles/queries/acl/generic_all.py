@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
+from hackles.abuse import print_abuse_section
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -36,9 +35,9 @@ def get_generic_all(bh: BloodHoundCE, domain: str | None = None, severity: Sever
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS principal_type,
+        {node_type("n")} AS principal_type,
         m.name AS target,
-        {node_type('m')} AS target_type,
+        {node_type("m")} AS target_type,
         CASE WHEN m.enabled = false THEN 'Disabled' ELSE 'Enabled' END AS target_status,
         CASE WHEN m.admincount = true THEN 'Yes' ELSE 'No' END AS target_is_admin
     ORDER BY m.admincount DESC, n.name
@@ -75,6 +74,6 @@ def get_generic_all(bh: BloodHoundCE, domain: str | None = None, severity: Sever
                 for r in results
             ],
         )
-        print_abuse_info("GenericAll", results, extract_domain(results, domain))
+        print_abuse_section(results, edge_type="GenericAll")
 
     return result_count

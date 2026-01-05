@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -58,6 +56,5 @@ def get_passwd_notreqd(
             ["Name", "Display Name", "Admin", "Description"],
             [[r["name"], r["displayname"], r["admincount"], r["description"]] for r in results],
         )
-        print_abuse_info("BlankPassword", results, extract_domain(results, domain))
 
     return result_count

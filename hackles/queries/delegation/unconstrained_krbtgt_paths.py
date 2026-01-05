@@ -39,15 +39,18 @@ def get_unconstrained_to_dc_paths(
     domain_filter = "AND toUpper(u.domain) = toUpper($domain)" if domain else ""
     params = {"domain": domain} if domain else {}
 
-    # First, get unconstrained delegation systems
+    # First, get unconstrained delegation systems (excluding DCs)
     unconstrained_query = f"""
     MATCH (u)
     WHERE (u:User OR u:Computer)
     AND u.unconstraineddelegation = true
     AND u.enabled <> false
-    AND NOT u.objectid ENDS WITH '-516'
+    AND NOT EXISTS {{
+        MATCH (u)-[:MemberOf*1..]->(dcg:Group)
+        WHERE dcg.objectid ENDS WITH '-516'
+    }}
     {domain_filter}
-    RETURN u.name AS name, {node_type('u')} AS type, u.domain AS domain
+    RETURN u.name AS name, {node_type("u")} AS type, u.domain AS domain
     ORDER BY u.name
     """
     unconstrained = bh.run_query(unconstrained_query, params)
@@ -64,11 +67,14 @@ def get_unconstrained_to_dc_paths(
     WHERE (u:User OR u:Computer)
     AND u.unconstraineddelegation = true
     AND u.enabled <> false
-    AND NOT u.objectid ENDS WITH '-516'
+    AND NOT EXISTS {{
+        MATCH (u)-[:MemberOf*1..]->(dcg:Group)
+        WHERE dcg.objectid ENDS WITH '-516'
+    }}
     {domain_filter}
     WITH u
-    MATCH (dc:Computer)
-    WHERE dc.objectid ENDS WITH '-516'
+    MATCH (dc:Computer)-[:MemberOf*1..]->(dcGroup:Group)
+    WHERE dcGroup.objectid ENDS WITH '-516'
     WITH u, dc
     MATCH p=shortestPath((u)-[*1..{config.max_path_depth}]->(dc))
     WHERE length(p) > 0

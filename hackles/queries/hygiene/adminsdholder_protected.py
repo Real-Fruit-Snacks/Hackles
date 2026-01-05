@@ -29,8 +29,8 @@ def get_adminsdholder_protected(
     query = f"""
     MATCH (n {{admincount: true}})
     {domain_filter}
-    RETURN {node_type('n')} AS type, n.name AS name
-    ORDER BY {node_type('n')}, n.name
+    RETURN {node_type("n")} AS type, n.name AS name
+    ORDER BY {node_type("n")}, n.name
     """
     results = bh.run_query(query, params)
     result_count = len(results)

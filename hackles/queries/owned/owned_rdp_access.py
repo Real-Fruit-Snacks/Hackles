@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
 from hackles.queries.base import register_query
@@ -30,7 +28,7 @@ def get_owned_rdp_access(
     MATCH (owned)-[:CanRDP|MemberOf*1..3]->(c:Computer)
     WHERE (owned:Tag_Owned OR 'owned' IN owned.system_tags OR owned.owned = true)
     {from_owned_filter}
-    RETURN owned.name AS owned_principal, {node_type('owned')} AS owned_type,
+    RETURN owned.name AS owned_principal, {node_type("owned")} AS owned_type,
            c.name AS computer, c.operatingsystem AS os, c.enabled AS enabled
     ORDER BY owned.name
     LIMIT 50
@@ -49,11 +47,6 @@ def get_owned_rdp_access(
                 [r["owned_principal"], r["owned_type"], r["computer"], r["os"], r["enabled"]]
                 for r in results
             ],
-        )
-        print_abuse_info(
-            "CanRDP",
-            [{"principal": r["owned_principal"], "computer": r["computer"]} for r in results],
-            extract_domain(results, None),
         )
 
     return result_count

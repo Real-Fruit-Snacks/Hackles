@@ -14,13 +14,6 @@ class TestConfigDefaults:
         cfg = Config()
         assert cfg.quiet_mode is False
 
-    def test_default_show_abuse(self):
-        """Test show_abuse defaults to False."""
-        from hackles.core.config import Config
-
-        cfg = Config()
-        assert cfg.show_abuse is False
-
     def test_default_debug_mode(self):
         """Test debug_mode defaults to False."""
         from hackles.core.config import Config
@@ -74,14 +67,6 @@ class TestConfigSetters:
         cfg = Config()
         cfg.quiet_mode = True
         assert cfg.quiet_mode is True
-
-    def test_set_show_abuse(self):
-        """Test setting show_abuse."""
-        from hackles.core.config import Config
-
-        cfg = Config()
-        cfg.show_abuse = True
-        assert cfg.show_abuse is True
 
     def test_set_debug_mode(self):
         """Test setting debug_mode."""
@@ -145,7 +130,6 @@ class TestConfigReset:
 
         # Modify all settings
         cfg.quiet_mode = True
-        cfg.show_abuse = True
         cfg.debug_mode = True
         cfg.no_color = True
         cfg.output_format = "json"
@@ -158,7 +142,6 @@ class TestConfigReset:
 
         # Verify defaults restored
         assert cfg.quiet_mode is False
-        assert cfg.show_abuse is False
         assert cfg.debug_mode is False
         assert cfg.no_color is False
         assert cfg.output_format == "table"

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
 from hackles.display.tables import print_header, print_subheader
@@ -62,16 +60,5 @@ def get_owned_to_adcs(
 
     if results:
         print_paths_grouped(results)
-        # Extract info for abuse templates
-        abuse_data = [
-            {"principal": r["nodes"][0], "template": r.get("template"), "ca": r.get("ca")}
-            for r in results
-            if r.get("nodes")
-        ]
-        print_abuse_info(
-            "ADCSESC1",
-            abuse_data,
-            extract_domain([{"name": r["nodes"][0]} for r in results if r.get("nodes")], None),
-        )
 
     return result_count

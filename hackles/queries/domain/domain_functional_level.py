@@ -11,7 +11,6 @@ from hackles.queries.base import register_query
 if TYPE_CHECKING:
     from hackles.core.bloodhound import BloodHoundCE
 
-
 # Functional levels and their Windows Server equivalents
 FUNCTIONAL_LEVELS = {
     0: "Windows 2000",
@@ -86,7 +85,9 @@ def get_domain_functional_level(
             level_name = (
                 FUNCTIONAL_LEVELS.get(parsed, f"Unknown ({level})")
                 if parsed is not None
-                else str(level) if level else "Unknown"
+                else str(level)
+                if level
+                else "Unknown"
             )
             is_outdated = parsed is not None and parsed < RECOMMENDED_LEVEL
             display_results.append(

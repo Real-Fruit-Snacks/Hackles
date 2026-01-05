@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -38,6 +37,5 @@ def get_golden_cert_paths(
     if results:
         print_warning("Compromising CA host allows forging certificates for ANY user!")
         print_table(["CA Host", "Domain"], [[r["ca_host"], r["domain"]] for r in results])
-        print_abuse_info("GoldenCert", results, domain)
 
     return result_count

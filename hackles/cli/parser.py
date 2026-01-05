@@ -33,18 +33,6 @@ def create_parser() -> argparse.ArgumentParser:
     query_group.add_argument(
         "-q", "--quiet", action="store_true", help="Hide banner and zero-result queries"
     )
-    query_group.add_argument(
-        "--abuse", action="store_true", help="Show attack commands and exploitation templates"
-    )
-    query_group.add_argument(
-        "--abuse-var",
-        action="append",
-        metavar="KEY=VALUE",
-        help="Set abuse template variable (e.g., DC_IP=192.168.1.10)",
-    )
-    query_group.add_argument(
-        "--abuse-config", metavar="FILE", help="Load abuse variables from config file"
-    )
     query_group.add_argument("--debug", action="store_true", help="Show query execution details")
     query_group.add_argument(
         "-c", "--custom", action="append", help="Load custom Cypher queries from file or directory"
@@ -71,6 +59,11 @@ def create_parser() -> argparse.ArgumentParser:
     output_group.add_argument("--no-color", action="store_true", help="Disable colored output")
     output_group.add_argument(
         "--progress", action="store_true", help="Show progress bar during execution"
+    )
+    output_group.add_argument(
+        "--abuse",
+        action="store_true",
+        help="Show abuse/exploitation commands for findings",
     )
     owned_group = parser.add_argument_group("Owned Management")
     owned_group.add_argument(

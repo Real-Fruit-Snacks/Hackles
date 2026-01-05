@@ -197,11 +197,11 @@ def collect_stats_data(bh: BloodHoundCE, domain: Optional[str] = None) -> Dict[s
     if results:
         stats["adcs"]["cert_templates"] = results[0]["total"]
 
-    # Domain Controllers (objectid ends with -516)
+    # Domain Controllers - find computers in DC group (RID -516)
     query = f"""
-    MATCH (n:Computer)
-    WHERE n.objectid ENDS WITH '-516' {adcs_and}
-    RETURN count(n) AS total
+    MATCH (c:Computer)-[:MemberOf*1..]->(g:Group)
+    WHERE g.objectid ENDS WITH '-516' {adcs_and}
+    RETURN count(DISTINCT c) AS total
     """
     results = bh.run_query(query, params)
     if results:
@@ -443,6 +443,9 @@ def do_ingest(args) -> None:
             api, files, wait_for_completion=True, timeout=300, progress_callback=progress
         )
 
+        if config.debug_mode and result.get("job_id"):
+            print(f"{colors.CYAN}[DEBUG] Job ID: {result.get('job_id')}{colors.END}")
+
         print()
         if result["files_uploaded"] > 0:
             print(f"{colors.GREEN}[+] Upload complete!{colors.END}")
@@ -458,6 +461,9 @@ def do_ingest(args) -> None:
 
         for error in result["errors"]:
             print(f"{colors.FAIL}    - {error}{colors.END}")
+
+        if config.debug_mode:
+            print(f"{colors.CYAN}[DEBUG] Full result: {result}{colors.END}")
 
     except BloodHoundAPIError as e:
         print(f"{colors.FAIL}[!] API error: {e}{colors.END}")
@@ -626,15 +632,21 @@ def do_ingest_history(args) -> None:
             if end_time and "T" in str(end_time):
                 end_time = str(end_time).replace("T", " ").split(".")[0]
 
-            # Color status
-            if status in ("complete", "completed", "ingested"):
-                status_display = f"{colors.GREEN}{status}{colors.END}"
-            elif status in ("failed", "error"):
-                status_display = f"{colors.FAIL}{status}{colors.END}"
-            elif status in ("running", "processing"):
-                status_display = f"{colors.BLUE}{status}{colors.END}"
+            # Color status (API returns numeric codes: 0=pending, 1=running, 2=complete, 3=failed, 6=ingesting)
+            STATUS_MAP = {0: "Pending", 1: "Running", 2: "Complete", 3: "Failed", 6: "Ingesting"}
+            if isinstance(status, int):
+                status_label = STATUS_MAP.get(status, f"Unknown ({status})")
             else:
-                status_display = status
+                status_label = str(status)
+
+            if status in (2, "complete", "completed", "ingested"):
+                status_display = f"{colors.GREEN}{status_label}{colors.END}"
+            elif status in (3, "failed", "error"):
+                status_display = f"{colors.FAIL}{status_label}{colors.END}"
+            elif status in (1, 6, "running", "processing", "ingesting"):
+                status_display = f"{colors.BLUE}{status_label}{colors.END}"
+            else:
+                status_display = status_label
 
             table.add_row([job_id, status_display, start_time, end_time, message])
 
@@ -660,10 +672,10 @@ def main():
 
     # Set config from args
     config.quiet_mode = args.quiet
-    config.show_abuse = args.abuse
     config.debug_mode = args.debug
     config.no_color = args.no_color or not sys.stdout.isatty()
     config.show_progress = args.progress
+    config.show_abuse = args.abuse
 
     # Set output format
     global _html_output_path
@@ -699,24 +711,6 @@ def main():
         config.max_path_depth = args.max_path_depth
     if args.max_paths:
         config.max_paths = args.max_paths
-
-    # Load abuse variables from config file first (can be overridden by CLI)
-    default_abuse_config = Path.home() / ".hackles" / "abuse.conf"
-    if args.abuse_config:
-        config.load_abuse_config(Path(args.abuse_config))
-    elif default_abuse_config.exists():
-        config.load_abuse_config(default_abuse_config)
-
-    # CLI abuse vars override config file values
-    if args.abuse_var:
-        for var in args.abuse_var:
-            if "=" in var:
-                key, value = var.split("=", 1)
-                config.abuse_vars[key.strip()] = value.strip()
-            else:
-                print(
-                    f"{colors.WARNING}[!] Invalid --abuse-var format: {var} (expected KEY=VALUE){colors.END}"
-                )
 
     # === BLOODHOUND CE API OPERATIONS (no Neo4j required) ===
     if args.auth:
@@ -999,34 +993,6 @@ def main():
                     print_table(["Relationship", "Target", "Type"], rows)
                     if len(edges_out) > 15:
                         print(f"    {colors.GRAY}... and {len(edges_out) - 15} more{colors.END}")
-
-                    # Show abuse templates for outbound edges if --abuse is set
-                    if config.show_abuse:
-                        from hackles.abuse.printer import print_abuse_info
-                        from hackles.core.utils import extract_domain
-
-                        # Get domain from node name
-                        node_domain = extract_domain([{"name": args.investigate}])
-
-                        # Group edges by relationship type to avoid duplicate abuse info
-                        seen_relationships = set()
-                        for e in edges_out[:5]:  # Limit to first 5 to avoid spam
-                            rel = e["relationship"]
-                            if rel in seen_relationships:
-                                continue
-                            seen_relationships.add(rel)
-
-                            # Build result context for abuse template
-                            result = {
-                                "principal": args.investigate,  # The attacker
-                                "target": e["target"],
-                                "target_type": e["target_type"].lower(),
-                            }
-                            # Add group placeholder if target is a group
-                            if e["target_type"].lower() == "group":
-                                result["group"] = e["target"]
-
-                            print_abuse_info(rel, [result], node_domain)
 
                 # Inbound edges (who can attack this node)
                 edges_in = bh.get_edges_to(args.investigate)
@@ -1653,7 +1619,10 @@ def main():
                 query = f"""
                 MATCH (n)
                 WHERE n.unconstraineddelegation = true
-                AND NOT n.objectid ENDS WITH '-516' {domain_filter}
+                AND NOT EXISTS {{
+                    MATCH (n)-[:MemberOf*1..]->(dcg:Group)
+                    WHERE dcg.objectid ENDS WITH '-516'
+                }} {domain_filter}
                 RETURN n.name AS name, labels(n)[0] AS type, n.enabled AS enabled
                 ORDER BY labels(n)[0]
                 """
@@ -1860,9 +1829,9 @@ def main():
                 return
 
             # Table output
-            print(f"\n{colors.BOLD}{'='*70}")
+            print(f"\n{colors.BOLD}{'=' * 70}")
             print(f"{'QUICK WINS SUMMARY':^70}")
-            print(f"{'='*70}{colors.END}\n")
+            print(f"{'=' * 70}{colors.END}\n")
 
             # Short paths to DA
             if results["short_paths_to_da"]:
@@ -2078,9 +2047,9 @@ def main():
                 return
 
             # Table output
-            print(f"\n{colors.BOLD}{'='*70}")
+            print(f"\n{colors.BOLD}{'=' * 70}")
             print(f"{'SECURITY AUDIT REPORT':^70}")
-            print(f"{'='*70}{colors.END}\n")
+            print(f"{'=' * 70}{colors.END}\n")
 
             # Kerberoastable Admins
             if results["kerberoastable_admins"]:
@@ -2443,6 +2412,10 @@ def main():
             print(f"    Ran {len(selected_queries)} queries")
         else:
             # Table output - already printed during execution
+            # Print executive summary before findings summary
+            from hackles.display.summary import print_executive_summary
+
+            print_executive_summary(bh, all_results, severity_counts, args.domain)
             print_severity_summary(severity_counts)
             print(f"\n{colors.GREEN}[+] Analysis completed in {elapsed:.2f}s{colors.END}")
             print(f"    Ran {len(selected_queries)} queries")

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
 from hackles.display.tables import print_header, print_subheader, print_warning
@@ -57,8 +55,5 @@ def get_shortest_paths_kerberoastable_to_da(
     if results:
         print_warning("[!] Prioritize cracking these accounts - they lead to DA!")
         print_paths_grouped(results)
-        # Extract starting user names for abuse info
-        targets = [{"name": r["nodes"][0]} for r in results if r.get("nodes")]
-        print_abuse_info("Kerberoasting", targets, extract_domain(targets, domain))
 
     return result_count

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -39,7 +37,7 @@ def get_esc6_san_flag(
     WITH n, ca, COLLECT(DISTINCT t.name)[0..3] AS usable_templates
     RETURN DISTINCT
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         ca.name AS ca_name,
         usable_templates,
         'ESC6a' AS variant
@@ -57,7 +55,7 @@ def get_esc6_san_flag(
     WITH n, ca, COLLECT(DISTINCT t.name)[0..3] AS usable_templates
     RETURN DISTINCT
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         ca.name AS ca_name,
         usable_templates,
         'ESC6b' AS variant
@@ -90,6 +88,5 @@ def get_esc6_san_flag(
                 for r in results
             ],
         )
-        print_abuse_info("ADCSESC6", results, extract_domain(results, domain))
 
     return result_count

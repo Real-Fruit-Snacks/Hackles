@@ -30,7 +30,7 @@ def get_owned_local_admin(
     MATCH (owned)-[:AdminTo|MemberOf*1..3]->(c:Computer)
     WHERE (owned:Tag_Owned OR 'owned' IN owned.system_tags OR owned.owned = true)
     {from_owned_filter}
-    RETURN owned.name AS owned_principal, {node_type('owned')} AS owned_type,
+    RETURN owned.name AS owned_principal, {node_type("owned")} AS owned_type,
            c.name AS computer, c.operatingsystem AS os
     ORDER BY owned.name
     LIMIT 50

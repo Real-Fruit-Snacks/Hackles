@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
@@ -28,7 +27,7 @@ def get_manage_ca(bh: BloodHoundCE, domain: str | None = None, severity: Severit
     AND NOT n.objectid ENDS WITH '-512'
     AND NOT n.objectid ENDS WITH '-519'
     {domain_filter}
-    RETURN n.name AS principal, {node_type('n')} AS type, ca.name AS ca
+    RETURN n.name AS principal, {node_type("n")} AS type, ca.name AS ca
     LIMIT 50
     """
     results = bh.run_query(query, params)
@@ -44,6 +43,5 @@ def get_manage_ca(bh: BloodHoundCE, domain: str | None = None, severity: Severit
             ["Principal", "Type", "Certificate Authority"],
             [[r["principal"], r["type"], r["ca"]] for r in results],
         )
-        print_abuse_info("ADCSESC7", results, domain)
 
     return result_count

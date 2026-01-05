@@ -32,7 +32,8 @@ def get_spooler_on_dcs(
     """
     results = bh.run_query(query, params)
     result_count = len(results)
-    enabled_count = sum(1 for r in results if r.get("spooler_enabled"))
+    # Only count True, not "Unknown" or other truthy values
+    enabled_count = sum(1 for r in results if r.get("spooler_enabled") is True)
 
     if not print_header("Print Spooler on DCs", severity, result_count):
         return result_count

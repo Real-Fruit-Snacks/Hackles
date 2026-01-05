@@ -35,12 +35,12 @@ def get_owned_principals(
     {from_owned_filter}
     RETURN
         n.name AS name,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         n.enabled AS enabled,
         n.description AS description,
         n.admincount AS admin,
         CASE WHEN 'admin_tier_0' IN n.system_tags THEN true ELSE false END AS tier_zero
-    ORDER BY {node_type('n')}, n.name
+    ORDER BY {node_type("n")}, n.name
     """
     results = bh.run_query(query, params)
     result_count = len(results)

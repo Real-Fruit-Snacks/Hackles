@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -35,7 +33,7 @@ def get_esc13_issuance_policy(
     {domain_filter}
     RETURN DISTINCT
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         g.name AS linked_group,
         g.highvalue AS high_value
     ORDER BY g.highvalue DESC, g.name, n.name
@@ -64,6 +62,5 @@ def get_esc13_issuance_policy(
                 for r in results
             ],
         )
-        print_abuse_info("ADCSESC13", results, extract_domain(results, domain))
 
     return result_count

@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
 from hackles.queries.base import register_query
@@ -32,7 +30,7 @@ def get_vulnerable_enrollment(
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         ct.name AS template,
         ca.name AS ca
     ORDER BY ct.name, n.name
@@ -50,6 +48,5 @@ def get_vulnerable_enrollment(
             ["Principal", "Type", "Template", "CA"],
             [[r["principal"], r["type"], r["template"], r["ca"]] for r in results],
         )
-        print_abuse_info("ESC1", results, extract_domain(results, domain))
 
     return result_count

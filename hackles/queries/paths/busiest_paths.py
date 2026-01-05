@@ -43,7 +43,7 @@ def get_busiest_paths(
                        'Owns', 'DCSync', 'GetChanges', 'GetChangesAll']
     WITH n, outbound_edges, count(r2) AS inbound_edges
     WHERE outbound_edges + inbound_edges > 5
-    RETURN n.name AS node, {node_type('n')} AS type, n.domain AS domain,
+    RETURN n.name AS node, {node_type("n")} AS type, n.domain AS domain,
            outbound_edges, inbound_edges,
            outbound_edges + inbound_edges AS total_edges
     ORDER BY total_edges DESC

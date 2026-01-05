@@ -83,7 +83,6 @@ def mock_config():
     # Save original values
     original_values = {
         "quiet_mode": config.quiet_mode,
-        "show_abuse": config.show_abuse,
         "debug_mode": config.debug_mode,
         "no_color": config.no_color,
         "output_format": config.output_format,
@@ -94,7 +93,6 @@ def mock_config():
 
     # Set test values
     config.quiet_mode = False
-    config.show_abuse = False
     config.debug_mode = False
     config.no_color = True
     config.output_format = "table"
@@ -106,7 +104,6 @@ def mock_config():
 
     # Restore original values
     config.quiet_mode = original_values["quiet_mode"]
-    config.show_abuse = original_values["show_abuse"]
     config.debug_mode = original_values["debug_mode"]
     config.no_color = original_values["no_color"]
     config.output_format = original_values["output_format"]

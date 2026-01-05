@@ -54,10 +54,10 @@ def get_schema_config_control(
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS principal_type,
+        {node_type("n")} AS principal_type,
         type(r) AS permission,
         m.name AS target,
-        {node_type('m')} AS target_type,
+        {node_type("m")} AS target_type,
         COALESCE(m.distinguishedname, 'N/A') AS target_dn
     ORDER BY permission, n.name
     LIMIT 100

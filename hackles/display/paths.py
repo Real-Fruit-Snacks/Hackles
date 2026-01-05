@@ -11,23 +11,25 @@ from hackles.display.colors import colors
 MAX_PATHS_DISPLAY = 10
 
 
-def _format_node_short(node_name: str) -> str:
+def _format_node_short(node_name: str | None) -> str:
     """Format a node name for compact display, removing domain suffix."""
+    if node_name is None:
+        return "Unknown"
     if "@" in node_name:
         return node_name.split("@")[0]
     return node_name
 
 
-def _format_node_with_owned(node_name: str, use_short: bool = True) -> str:
+def _format_node_with_owned(node_name: str | None, use_short: bool = True) -> str:
     """Format a node with owned marker if applicable."""
-    short_name = _format_node_short(node_name) if use_short else node_name
+    short_name = _format_node_short(node_name) if use_short else (node_name or "Unknown")
 
-    if node_name in config.owned_cache:
+    if node_name and node_name in config.owned_cache:
         is_admin = config.owned_cache[node_name]
         if is_admin:
-            return f"{colors.FAIL}[!]{colors.END}{short_name}"
+            return f"{colors.FAIL}[!]{colors.END} {short_name}"
         else:
-            return f"{colors.WARNING}[!]{colors.END}{short_name}"
+            return f"{colors.WARNING}[!]{colors.END} {short_name}"
     return short_name
 
 

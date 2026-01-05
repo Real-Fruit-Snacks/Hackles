@@ -10,6 +10,7 @@ from urllib.parse import urljoin
 import requests
 
 from hackles.api.auth import build_auth_headers
+from hackles.core.config import config
 
 
 class BloodHoundAPIError(Exception):
@@ -264,16 +265,23 @@ class BloodHoundAPI:
         while time.time() - start_time < timeout:
             try:
                 status = self.get_upload_job_status(job_id)
+                if config.debug_mode:
+                    print(f"[DEBUG] Job status response: {status}")
                 if callback:
                     callback(status)
 
                 job_status = status.get("data", {}).get("status", "")
 
-                # Check for completion states
-                if job_status in ("complete", "completed", "ingested"):
+                # Check for completion states (API returns numeric codes: 2=complete, 3=failed)
+                # Also handle string values for compatibility
+                if job_status in (2, "complete", "completed", "ingested"):
                     return True
-                if job_status in ("failed", "error"):
-                    error_msg = status.get("data", {}).get("status_message", "Unknown error")
+                if job_status in (3, "failed", "error"):
+                    error_msg = status.get("data", {}).get("status_message", "")
+                    if not error_msg:
+                        error_msg = (
+                            "No error message provided. Check BloodHound CE logs for details."
+                        )
                     raise BloodHoundAPIError(f"Ingestion failed: {error_msg}")
 
                 time.sleep(poll_interval)
@@ -382,4 +390,37 @@ class BloodHoundAPI:
                 status_code=response.status_code,
                 response=response.text,
             )
+        return _parse_json_response(response)
+
+    def get_asset_groups(self) -> dict[str, Any]:
+        """Get asset groups from BloodHound CE.
+
+        Returns:
+            Dict containing asset groups data
+
+        Raises:
+            BloodHoundAPIError: If request fails
+        """
+        response = self._request("GET", "/api/v2/asset-groups")
+        if response.status_code != 200:
+            raise BloodHoundAPIError(
+                "Failed to get asset groups",
+                status_code=response.status_code,
+                response=response.text,
+            )
+        return _parse_json_response(response)
+
+    def get_data_quality_stats(self) -> dict[str, Any]:
+        """Get data quality statistics from BloodHound CE.
+
+        Returns:
+            Dict containing data quality information, or empty dict if unavailable
+
+        Note:
+            Returns empty dict if endpoint is not available (older BH versions)
+        """
+        response = self._request("GET", "/api/v2/dataquality/stats")
+        if response.status_code != 200:
+            # Return empty if endpoint not available
+            return {}
         return _parse_json_response(response)

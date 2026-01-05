@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -35,10 +33,10 @@ def get_acl_abuse(bh: BloodHoundCE, domain: str | None = None, severity: Severit
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS principal_type,
+        {node_type("n")} AS principal_type,
         type(r) AS permission,
         m.name AS target,
-        {node_type('m')} AS target_type
+        {node_type("m")} AS target_type
     ORDER BY type(r), n.name
     LIMIT 500
     """
@@ -63,13 +61,5 @@ def get_acl_abuse(bh: BloodHoundCE, domain: str | None = None, severity: Severit
                 for r in results
             ],
         )
-
-        # Print abuse info for each unique permission type found
-        unique_permissions = {r["permission"] for r in results}
-        extracted_domain = extract_domain(results, domain)
-        for perm in sorted(unique_permissions):
-            # Filter findings for this specific permission type
-            perm_findings = [r for r in results if r["permission"] == perm]
-            print_abuse_info(perm, perm_findings, extracted_domain)
 
     return result_count

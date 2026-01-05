@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
+from hackles.abuse import print_abuse_for_query
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -37,7 +36,7 @@ def get_dcsync(bh: BloodHoundCE, domain: str | None = None, severity: Severity =
     {domain_filter}
     RETURN DISTINCT
         n.name AS name,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         d.name AS domain
     ORDER BY n.name
     LIMIT 1000
@@ -54,6 +53,6 @@ def get_dcsync(bh: BloodHoundCE, domain: str | None = None, severity: Severity =
         print_table(
             ["Principal", "Type", "Domain"], [[r["name"], r["type"], r["domain"]] for r in results]
         )
-        print_abuse_info("DCSync", results, extract_domain(results, domain))
+        print_abuse_for_query("dcsync", results)
 
     return result_count

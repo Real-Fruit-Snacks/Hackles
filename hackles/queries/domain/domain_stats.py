@@ -98,11 +98,11 @@ def get_domain_stats(bh: BloodHoundCE, domain: str | None = None, severity: Seve
     template_results = bh.run_query(template_query, params)
     template_count = template_results[0]["total"] if template_results else 0
 
-    # Domain Controllers
+    # Domain Controllers - find computers in DC group (RID -516)
     dc_query = f"""
-    MATCH (n:Computer)
-    WHERE n.objectid ENDS WITH '-516' {adcs_and}
-    RETURN count(n) AS total
+    MATCH (c:Computer)-[:MemberOf*1..]->(g:Group)
+    WHERE g.objectid ENDS WITH '-516' {adcs_and}
+    RETURN count(DISTINCT c) AS total
     """
     dc_results = bh.run_query(dc_query, params)
     dc_count = dc_results[0]["total"] if dc_results else 0

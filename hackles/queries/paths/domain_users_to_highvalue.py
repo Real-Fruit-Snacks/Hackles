@@ -31,12 +31,13 @@ def get_domain_users_to_highvalue(
     query = f"""
     MATCH p=shortestPath((g:Group)-[*1..{config.max_path_depth}]->(t))
     WHERE g.objectid ENDS WITH '-513'
+      AND g.name IS NOT NULL
       AND (t.highvalue = true OR t.objectid ENDS WITH '-512' OR t.objectid ENDS WITH '-519')
       AND g <> t
       {domain_filter}
     RETURN
         [n IN nodes(p) | n.name] AS nodes,
-        [n IN nodes(p) | {node_type('n')}] AS node_types,
+        [n IN nodes(p) | {node_type("n")}] AS node_types,
         [r IN relationships(p) | type(r)] AS relationships,
         length(p) AS path_length
     LIMIT {config.max_paths}

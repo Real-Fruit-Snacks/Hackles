@@ -30,7 +30,7 @@ def get_local_admin_rights(
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         c.name AS computer,
         c.operatingsystem AS os
     ORDER BY n.name

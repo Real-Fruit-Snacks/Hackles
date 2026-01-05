@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
@@ -32,7 +31,7 @@ def get_psremote_access(
     WHERE (n:User OR n:Group)
     AND (n.admincount IS NULL OR n.admincount = false)
     {domain_filter}
-    RETURN n.name AS principal, {node_type('n')} AS type, c.name AS computer, c.operatingsystem AS os
+    RETURN n.name AS principal, {node_type("n")} AS type, c.name AS computer, c.operatingsystem AS os
     LIMIT 100
     """
     results = bh.run_query(query, params)
@@ -46,11 +45,6 @@ def get_psremote_access(
         print_table(
             ["Principal", "Type", "Computer", "OS"],
             [[r["principal"], r["type"], r["computer"], r["os"]] for r in results],
-        )
-        print_abuse_info(
-            "CanPSRemote",
-            [{"principal": r["principal"], "computer": r["computer"]} for r in results],
-            domain,
         )
 
     return result_count

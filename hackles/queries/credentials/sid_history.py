@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
@@ -24,8 +23,8 @@ def get_sid_history(bh: BloodHoundCE, domain: str | None = None, severity: Sever
 
     query = f"""
     MATCH p=(n)-[:HasSIDHistory]->(target)
-    {domain_filter.replace('AND', 'WHERE') if domain_filter else ''}
-    RETURN n.name AS principal, {node_type('n')} AS type, target.name AS sid_history_of, {node_type('target')} AS target_type
+    {domain_filter.replace("AND", "WHERE") if domain_filter else ""}
+    RETURN n.name AS principal, {node_type("n")} AS type, target.name AS sid_history_of, {node_type("target")} AS target_type
     LIMIT 100
     """
     results = bh.run_query(query, params)
@@ -40,7 +39,6 @@ def get_sid_history(bh: BloodHoundCE, domain: str | None = None, severity: Sever
             ["Principal", "Type", "Has SID History Of", "Target Type"],
             [[r["principal"], r["type"], r["sid_history_of"], r["target_type"]] for r in results],
         )
-        print_abuse_info("HasSIDHistory", results, domain)
 
     return result_count
 

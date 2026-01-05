@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -43,7 +41,7 @@ def get_esc3_enrollment_agent(
     OPTIONAL MATCH (c)-[:PublishedTo]->(ca:EnterpriseCA)
     RETURN
         u.name AS principal,
-        {node_type('u')} AS type,
+        {node_type("u")} AS type,
         c.name AS template,
         ca.name AS ca
     ORDER BY c.name, u.name
@@ -66,6 +64,5 @@ def get_esc3_enrollment_agent(
             ["Principal", "Type", "Template", "CA"],
             [[r["principal"], r["type"], r["template"], r.get("ca", "Unknown")] for r in results],
         )
-        print_abuse_info("ADCSESC3", results, extract_domain(results, domain))
 
     return result_count

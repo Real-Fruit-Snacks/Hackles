@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -34,7 +32,7 @@ def get_any_purpose_templates(
     OPTIONAL MATCH (c)-[:PublishedTo]->(ca:EnterpriseCA)
     RETURN
         u.name AS principal,
-        {node_type('u')} AS type,
+        {node_type("u")} AS type,
         c.name AS template,
         ca.name AS ca
     ORDER BY c.name, u.name
@@ -56,6 +54,5 @@ def get_any_purpose_templates(
             [[r["principal"], r["type"], r["template"], r.get("ca", "Unknown")] for r in results],
         )
         # ESC2 is the more common abuse path
-        print_abuse_info("ADCSESC2", results, extract_domain(results, domain))
 
     return result_count

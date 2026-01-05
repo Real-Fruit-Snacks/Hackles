@@ -1,92 +1,116 @@
-"""YAML abuse template loader"""
+"""YAML template loader for abuse commands."""
 
-import sys
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-# Global abuse info dictionary - populated by load_abuse_templates()
-ABUSE_INFO: Dict[str, Any] = {}
-_loaded = False
+import yaml
+
+# Cache for loaded templates
+_template_cache: dict[str, dict[str, Any]] = {}
+
+# Map edge types to template files
+EDGE_TO_TEMPLATE = {
+    # ACL edges
+    "GenericAll": "acl",
+    "GenericWrite": "acl",
+    "WriteDacl": "acl",
+    "WriteOwner": "acl",
+    "ForceChangePassword": "acl",
+    "AddMember": "acl",
+    "AllExtendedRights": "acl",
+    "Owns": "acl",
+    # Delegation edges
+    "AllowedToDelegate": "delegation",
+    "AllowedToAct": "delegation",
+    # Lateral movement edges
+    "AdminTo": "lateral",
+    "CanRDP": "lateral",
+    "CanPSRemote": "lateral",
+    "ExecuteDCOM": "lateral",
+    "HasSession": "lateral",
+}
+
+# Map query names to template files and keys
+QUERY_TO_TEMPLATE = {
+    "kerberoastable": ("credentials", "Kerberoasting"),
+    "asrep": ("credentials", "ASREPRoasting"),
+    "dcsync": ("credentials", "DCSync"),
+    "unconstrained": ("delegation", "Unconstrained"),
+    "constrained": ("delegation", "Constrained"),
+    "rbcd": ("delegation", "RBCD"),
+    "esc1": ("adcs", "ESC1"),
+    "esc2": ("adcs", "ESC2"),
+    "esc3": ("adcs", "ESC3"),
+    "esc4": ("adcs", "ESC4"),
+    "esc6": ("adcs", "ESC6"),
+    "esc8": ("adcs", "ESC8"),
+}
 
 
-def load_abuse_templates(templates_dir: Optional[Path] = None) -> Dict[str, Any]:
-    """Load abuse templates from YAML files in templates directory.
+def _get_templates_dir() -> Path:
+    """Get the path to the templates directory."""
+    return Path(__file__).parent / "templates"
 
-    Args:
-        templates_dir: Path to templates directory. Defaults to abuse/templates/
 
-    Returns:
-        Dictionary of abuse templates keyed by attack name
-    """
-    global _loaded  # Only _loaded needs global (reassigned); ABUSE_INFO is modified in-place
+def _load_template(name: str) -> dict[str, Any]:
+    """Load a YAML template file by name (cached)."""
+    if name in _template_cache:
+        return _template_cache[name]
 
-    # Return cached templates if already loaded
-    if _loaded and ABUSE_INFO:
-        return ABUSE_INFO
-
-    if templates_dir is None:
-        templates_dir = Path(__file__).parent / "templates"
-
-    if not templates_dir.exists():
-        return ABUSE_INFO
+    template_path = _get_templates_dir() / f"{name}.yaml"
+    if not template_path.exists():
+        _template_cache[name] = {}
+        return {}
 
     try:
-        import yaml
-    except ImportError:
-        print("[!] Warning: pyyaml not installed - abuse templates disabled", file=sys.stderr)
-        print("    Install with: pip install pyyaml", file=sys.stderr)
-        return ABUSE_INFO
-
-    for yaml_file in sorted(templates_dir.glob("*.yml")):
-        try:
-            with open(yaml_file, encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-                if data and "name" in data:
-                    # Validate required fields
-                    if "commands" not in data or not data["commands"]:
-                        print(
-                            f"[!] Warning: {yaml_file.name} missing 'commands' field",
-                            file=sys.stderr,
-                        )
-                        continue
-                    # Store by name for lookup
-                    ABUSE_INFO[data["name"]] = {
-                        "description": data.get("description", ""),
-                        "commands": data.get("commands", []),
-                        "opsec": data.get("opsec", []),
-                        "references": data.get("references", []),
-                    }
-        except Exception as e:
-            # Log malformed files to stderr
-            print(f"[!] Warning: Failed to load {yaml_file.name}: {e}", file=sys.stderr)
-
-    _loaded = True  # Only mark loaded after successful completion
-    return ABUSE_INFO
+        with open(template_path) as f:
+            data = yaml.safe_load(f) or {}
+            _template_cache[name] = data
+            return data
+    except (yaml.YAMLError, OSError):
+        _template_cache[name] = {}
+        return {}
 
 
-def get_abuse_template(attack_type: str) -> Optional[Dict[str, Any]]:
-    """Get a specific abuse template by name.
+def get_abuse_commands(edge_type: str, target_type: str) -> Optional[dict[str, Any]]:
+    """Get abuse commands for an edge type and target type.
 
     Args:
-        attack_type: Name of the attack (e.g., "Kerberoasting")
+        edge_type: The edge/relationship type (GenericAll, WriteDacl, etc.)
+        target_type: The target node type (User, Computer, Group, etc.)
 
     Returns:
-        Abuse template dict or None if not found
+        Dict with description, commands, opsec, references or None
     """
-    # Ensure templates are loaded
-    if not _loaded:
-        load_abuse_templates()
+    template_name = EDGE_TO_TEMPLATE.get(edge_type)
+    if not template_name:
+        return None
 
-    return ABUSE_INFO.get(attack_type)
+    template = _load_template(template_name)
+    edge_data = template.get(edge_type, {})
+    return edge_data.get(target_type)
 
 
-def list_abuse_templates() -> list:
-    """List all available abuse template names.
+def get_query_abuse_commands(query_name: str) -> Optional[dict[str, Any]]:
+    """Get abuse commands for a specific query type.
+
+    Args:
+        query_name: The query identifier (kerberoastable, asrep, etc.)
 
     Returns:
-        Sorted list of template names
+        Dict with description, commands, opsec, references or None
     """
-    if not _loaded:
-        load_abuse_templates()
+    mapping = QUERY_TO_TEMPLATE.get(query_name.lower())
+    if not mapping:
+        return None
 
-    return sorted(ABUSE_INFO.keys())
+    template_name, key = mapping
+    template = _load_template(template_name)
+    return template.get(key)
+
+
+def clear_cache() -> None:
+    """Clear the template cache (useful for testing)."""
+    _template_cache.clear()

@@ -43,7 +43,7 @@ def get_s4u2self_unconstrained(
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         n.enabled AS enabled,
         CASE WHEN n.admincount = true THEN 'Yes' ELSE 'No' END AS is_admin,
         CASE WHEN 'admin_tier_0' IN n.system_tags OR n:Tag_Tier_Zero THEN 'T0' ELSE '' END AS tier_zero,

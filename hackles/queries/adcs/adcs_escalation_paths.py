@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table
 from hackles.queries.base import register_query
@@ -32,7 +30,7 @@ def get_adcs_escalation_paths(
     OPTIONAL MATCH (m)-[:PublishedTo]->(ca:EnterpriseCA)
     RETURN
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         type(r) AS escalation,
         m.name AS target,
         ca.name AS ca
@@ -67,12 +65,5 @@ def get_adcs_escalation_paths(
                 for r in results
             ],
         )
-
-        # Print abuse info for each unique escalation type found
-        extracted_domain = extract_domain(results, domain)
-        for esc in sorted(esc_types.keys()):
-            # Filter findings for this specific escalation type
-            esc_findings = [r for r in results if r["escalation"] == esc]
-            print_abuse_info(esc, esc_findings, extracted_domain)
 
     return result_count

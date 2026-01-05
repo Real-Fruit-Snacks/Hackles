@@ -36,7 +36,7 @@ def get_privileged_ou_delegation(
         MATCH (p)-[:MemberOf*1..]->(g:Group)
         WHERE g.objectid ENDS WITH '-512' OR g.objectid ENDS WITH '-519'
     }}
-    RETURN p.name AS principal, {node_type('p')} AS principal_type,
+    RETURN p.name AS principal, {node_type("p")} AS principal_type,
            type(r) AS permission, ou.name AS ou_name, ou.domain AS domain
     ORDER BY ou.name, p.name
     """

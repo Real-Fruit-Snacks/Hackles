@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
@@ -63,8 +62,5 @@ def get_asrep_paths_to_da(
     if results:
         print_warning("AS-REP roast these users, crack password, then follow path to DA!")
         print_paths_grouped(results)
-        # Extract starting user names for abuse info
-        targets = [{"name": r["nodes"][0]} for r in results if r.get("nodes")]
-        print_abuse_info("ASREPRoasting", targets, domain)
 
     return result_count

@@ -28,7 +28,7 @@ def get_container_acl_abuse(
     WHERE NOT n.objectid ENDS WITH '-512'
       AND NOT n.objectid ENDS WITH '-519'
     {domain_filter}
-    RETURN n.name AS principal, {node_type('n')} AS type, type(r) AS permission, ou.name AS ou_name
+    RETURN n.name AS principal, {node_type("n")} AS type, type(r) AS permission, ou.name AS ou_name
     ORDER BY ou.name
     """
     results = bh.run_query(query, params)

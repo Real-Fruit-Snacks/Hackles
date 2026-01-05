@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.config import config
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.paths import print_paths_grouped
 from hackles.display.tables import print_header, print_subheader
@@ -61,8 +59,5 @@ def get_owned_to_kerberoastable(
 
     if results:
         print_paths_grouped(results)
-        # Extract target (last node) names for abuse info
-        targets = [{"name": r["nodes"][-1]} for r in results if r.get("nodes")]
-        print_abuse_info("Kerberoasting", targets, extract_domain(targets, None))
 
     return result_count

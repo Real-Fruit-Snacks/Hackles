@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
+from hackles.abuse import print_abuse_section
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -38,7 +37,7 @@ def get_force_change_password(
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS principal_type,
+        {node_type("n")} AS principal_type,
         m.name AS target,
         CASE WHEN m.enabled = false THEN 'Disabled' ELSE 'Enabled' END AS target_status,
         CASE WHEN m.admincount = true THEN 'Yes' ELSE 'No' END AS target_is_admin,
@@ -78,6 +77,8 @@ def get_force_change_password(
                 for r in results
             ],
         )
-        print_abuse_info("ForceChangePassword", results, extract_domain(results, domain))
+        # ForceChangePassword only applies to users
+        user_results = [dict(r, target_type="User") for r in results]
+        print_abuse_section(user_results, edge_type="ForceChangePassword")
 
     return result_count

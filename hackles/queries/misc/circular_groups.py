@@ -24,7 +24,7 @@ def get_circular_groups(
 
     query = f"""
     MATCH p=(g:Group)-[:MemberOf*2..6]->(g)
-    {domain_filter.replace('AND', 'WHERE') if domain_filter else ''}
+    {domain_filter.replace("AND", "WHERE") if domain_filter else ""}
     RETURN DISTINCT
         g.name AS group_name,
         [n IN nodes(p) | n.name] AS cycle_path,

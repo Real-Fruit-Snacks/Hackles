@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -34,7 +32,7 @@ def get_esc4_template_acl(
     {domain_filter}
     RETURN DISTINCT
         n.name AS principal,
-        {node_type('n')} AS type,
+        {node_type("n")} AS type,
         t.name AS template,
         t.displayname AS display_name
     ORDER BY t.name, n.name
@@ -56,6 +54,5 @@ def get_esc4_template_acl(
                 for r in results
             ],
         )
-        print_abuse_info("ADCSESC4", results, extract_domain(results, domain))
 
     return result_count

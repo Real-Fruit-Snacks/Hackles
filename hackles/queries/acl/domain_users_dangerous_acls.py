@@ -29,9 +29,10 @@ def get_domain_users_dangerous_acls(
     query = f"""
     MATCH p=(g:Group)-[r:Owns|WriteDacl|GenericAll|WriteOwner|ExecuteDCOM|GenericWrite|AllowedToDelegate|ForceChangePassword|AddMember|AllExtendedRights]->(n)
     WHERE g.objectid ENDS WITH '-513'
+    AND g.name IS NOT NULL
     {domain_filter}
     RETURN type(r) AS edge,
-           {node_type('n')} AS target_type,
+           {node_type("n")} AS target_type,
            n.name AS target
     ORDER BY edge, target
     LIMIT 100

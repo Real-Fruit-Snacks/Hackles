@@ -30,7 +30,7 @@ def get_cross_domain_ownership(
     AND target.domain IS NOT NULL
     RETURN owner.name AS owner, owner.domain AS owner_domain,
            target.name AS target_object, target.domain AS target_domain,
-           {node_type('target')} AS target_type
+           {node_type("target")} AS target_type
     ORDER BY owner.domain, target.domain
     LIMIT 100
     """

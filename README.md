@@ -1,6 +1,6 @@
 # Hackles
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Real-Fruit-Snacks/hackles/releases/tag/v2.0.0)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/Real-Fruit-Snacks/hackles/releases/tag/v2.3.0)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Neo4j 5.0+](https://img.shields.io/badge/neo4j-5.0+-green.svg)](https://neo4j.com/)
@@ -8,7 +8,7 @@
 
 > **Extract quick wins from BloodHound Community Edition**
 
-A fast CLI tool for identifying Active Directory attack paths, misconfigurations, and privilege escalation opportunities. **152 security queries** across 13 categories with **58 ready-to-use attack templates**.
+A fast CLI tool for identifying Active Directory attack paths, misconfigurations, and privilege escalation opportunities. **152 security queries** across 13 categories with clear vulnerability impact descriptions.
 
 ```bash
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a                    # Run all 152 queries
@@ -23,7 +23,6 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
 | Feature | Description |
 |---------|-------------|
 | **152 Security Queries** | Privilege escalation, ACL abuse, ADCS (ESC1-ESC15), delegation, coercion, lateral movement |
-| **58 Abuse Templates** | Copy-paste attack commands with OPSEC notes and BloodHound.py integration |
 | **Quick Wins Summary** | `--quick-wins` shows 1-2 hop paths to DA, Kerberoastable admins, AS-REP targets, ACL abuse |
 | **Security Audit** | `--audit` consolidated hygiene report: Kerberoastable admins, AS-REP, unconstrained delegation, unsupported OS, LAPS, guest accounts |
 | **Quick Enumeration** | `--computers`, `--users`, `--spns` for rapid domain enumeration |
@@ -32,9 +31,10 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
 | **Multiple Outputs** | Table, JSON, CSV, HTML reports |
 | **Severity Filtering** | Focus on CRITICAL/HIGH findings only |
 | **Owned Tracking** | Highlights compromised accounts with `[!]` markers |
+| **Abuse Commands** | `--abuse` shows exploitation commands (Impacket, Certipy, bloodyAD) with OPSEC notes |
+| **Executive Summary** | Automatic end-of-run summary with domain profile, security posture, and prioritized next steps |
 | **Path Finding** | Shortest paths to Domain Admin, Domain Controllers |
 | **Configurable Thresholds** | Customize stale days, path depth, result limits |
-| **Abuse Template Variables** | Pre-fill DC_IP, YOUR_PASSWORD, and other placeholders |
 | **BloodHound CE API** | Ingest data files, view ingest history, and clear database without Neo4j access |
 | **Shell Completion** | Tab completion for bash/zsh/fish |
 
@@ -68,8 +68,8 @@ pip install -r requirements.txt
 # List available domains
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -l
 
-# Run all queries with abuse commands shown
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --abuse
+# Run all queries
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a
 
 # Generate HTML report
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --html report.html
@@ -133,9 +133,6 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --severity CRITICA
 # Quiet mode (hide banner + zero-result queries)
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a -q
 
-# Show abuse commands for each finding
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --abuse
-
 # Filter by domain
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a -d CORP.LOCAL
 
@@ -167,6 +164,7 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --search '*ADMIN*' --
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --stats --json        # Stats as JSON
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --no-color | tee output.txt
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --progress         # Show progress bar
+python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --acl --abuse         # Show exploitation commands
 ```
 
 ### Quick Filters
@@ -190,7 +188,6 @@ All node operations support `*` wildcards for pattern matching.
 ```bash
 # Comprehensive investigation (auto-detects user/computer/group)
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate 'USER@CORP.LOCAL'
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate 'USER@CORP.LOCAL' --abuse  # With attack commands
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate 'DC01.CORP.LOCAL'
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --investigate '*.CORP.LOCAL'  # Triage view
 
@@ -250,31 +247,7 @@ python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --attack-paths --max-
 
 # Customize stale account threshold (default: 90 days)
 python -m hackles -u neo4j -p 'bloodhoundcommunityedition' --hygiene --stale-days 30
-
-# Pre-fill abuse template placeholders
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --abuse --abuse-var DC_IP=192.168.1.10
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --abuse --abuse-var DC_IP=192.168.1.10 --abuse-var YOUR_PASSWORD='Summer2024!'
-
-# Load abuse variables from config file
-python -m hackles -u neo4j -p 'bloodhoundcommunityedition' -a --abuse --abuse-config ~/pentest/vars.conf
 ```
-
-<details>
-<summary><b>Abuse Config File Format</b></summary>
-
-Create `~/.hackles/abuse.conf` (auto-loaded) or specify with `--abuse-config`:
-
-```bash
-# Abuse template variables
-DC_IP=192.168.1.10
-ATTACKER_IP=10.10.14.5
-YOUR_PASSWORD=Summer2024!
-YOUR_USER=jsmith
-```
-
-CLI `--abuse-var` arguments override config file values.
-
-</details>
 
 ### BloodHound CE API Operations
 
@@ -391,6 +364,76 @@ Plus: Golden Certificate paths, enrollment abuse detection.
 | [!] R.HAGGARD@CORP.LOCAL      | R. Haggard   | True    | No    | >1 year  |
 | SVC_SQL@CORP.LOCAL            | SQL Service  | True    | No    | >3 months|
 +-------------------------------+--------------+---------+-------+----------+
+
+    [ABUSE COMMANDS]  # Shown with --abuse flag
+    ==================================================
+    Target: R.HAGGARD@CORP.LOCAL (+1 more)
+    --------------------------------------------------
+    [1] Kerberoast (Impacket)
+        GetUserSPNs.py -request -dc-ip <DC_IP> '<DOMAIN>/<USERNAME>:<PASSWORD>'
+
+    OPSEC:
+      - Creates Event ID 4769 with encryption type 0x17
+
+[*] Executive Summary
+    ══════════════════════════════════════════════════
+
+    DOMAIN PROFILE
+    ──────────────────────────────────────────────────
+    Domain:              CORP.LOCAL
+    Domain Controller:   DC01.CORP.LOCAL
+    Functional Level:    2016
+    Users:               145 enabled (162 total)
+    Computers:           28 enabled
+    Groups:              89
+    ADCS:                1 CA(s), 12 templates
+
+    DATA QUALITY
+    ──────────────────────────────────────────────────
+    [*] Active Sessions:      47
+    [+] Stale Accounts:       12% (18 users >90d)
+
+    TRUST ANALYSIS
+    ──────────────────────────────────────────────────
+    [*] Domain Trusts:        2 total (1 external, 0 forest)
+    [!] SID Filter Disabled:  1 trust(s) - ESCALATION RISK
+        → CORP.LOCAL <-> PARTNER.COM
+
+    SECURITY POSTURE
+    ──────────────────────────────────────────────────
+    [!] LAPS Coverage:            32% (9/28 computers)
+    [!] Kerberoastable Admins:    2 accounts
+    [!] AS-REP Roastable:         3 accounts
+    [!] Unconstrained Delegation: 1 non-DC system
+    [+] DCSync Non-Admin:         None detected
+
+    GPO SECURITY
+    ──────────────────────────────────────────────────
+    [!] GPOs on DC OU:            4 (high-value targets)
+    [!] Non-Admin GPO Control:    2 GPO(s) by 1 principal(s)
+
+    SESSION HYGIENE
+    ──────────────────────────────────────────────────
+    [!] DA on Workstations:       2 admin(s) on 3 computer(s)
+    [!] Total Exposure:           5 privileged session(s) at risk
+
+    KEY FINDINGS
+    ──────────────────────────────────────────────────
+    CRITICAL: 1 | HIGH: 2 | MEDIUM: 5 | LOW: 3
+
+[*] Recommended Next Steps
+    ══════════════════════════════════════════════════
+
+    [HIGH] Kerberoastable Admin Accounts
+    $ GetUserSPNs.py -request -dc-ip DC01.CORP.LOCAL 'CORP/<USER>:<PASS>'
+      → SVC_SQL@CORP.LOCAL
+      → SVC_BACKUP@CORP.LOCAL
+
+    [HIGH] AS-REP Roastable Users
+    $ GetNPUsers.py -dc-ip DC01.CORP.LOCAL 'CORP/' -usersfile users.txt
+      → J.SMITH@CORP.LOCAL
+      → GUEST@CORP.LOCAL
+      → TESTUSER@CORP.LOCAL
 
 [*] Findings Summary
     CRITICAL: 1 | HIGH: 2 | MEDIUM: 5 | LOW: 3

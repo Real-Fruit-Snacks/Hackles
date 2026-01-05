@@ -30,7 +30,7 @@ def get_owned_group_memberships(
     MATCH (owned)-[:MemberOf*1..3]->(g:Group)
     WHERE (owned:Tag_Owned OR 'owned' IN owned.system_tags OR owned.owned = true)
     {from_owned_filter}
-    RETURN owned.name AS owned_principal, {node_type('owned')} AS owned_type,
+    RETURN owned.name AS owned_principal, {node_type("owned")} AS owned_type,
            g.name AS group_name,
            CASE WHEN 'admin_tier_0' IN g.system_tags THEN 'Yes' ELSE 'No' END AS tier_zero
     ORDER BY tier_zero DESC, owned.name

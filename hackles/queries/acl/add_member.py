@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
+from hackles.abuse import print_abuse_section
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -36,7 +35,7 @@ def get_add_member(bh: BloodHoundCE, domain: str | None = None, severity: Severi
     {domain_filter}
     RETURN
         n.name AS principal,
-        {node_type('n')} AS principal_type,
+        {node_type("n")} AS principal_type,
         g.name AS target_group,
         CASE WHEN g.admincount = true THEN 'Yes' ELSE 'No' END AS group_is_admin,
         CASE
@@ -81,6 +80,8 @@ def get_add_member(bh: BloodHoundCE, domain: str | None = None, severity: Severi
                 for r in results
             ],
         )
-        print_abuse_info("AddMember", results, extract_domain(results, domain))
+        # AddMember only applies to groups - remap keys for abuse display
+        group_results = [{"target": r["target_group"], "target_type": "Group"} for r in results]
+        print_abuse_section(group_results, edge_type="AddMember")
 
     return result_count

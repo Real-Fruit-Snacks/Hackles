@@ -5,6 +5,87 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-01-04
+
+### Added
+
+- **Executive Summary**: Comprehensive end-of-run summary displayed after all queries complete (table output only):
+  - **Domain Profile**: Domain name, DC hostname, functional level, user/computer/group counts, ADCS infrastructure
+  - **Data Quality**: Active session count, stale account percentage (configurable threshold)
+  - **Trust Analysis**: Domain trust count, external/forest trusts, SID filtering disabled warnings
+  - **Azure/Hybrid Identity**: AAD Connect server detection, MSOL/AAD sync accounts, DCSync-capable sync accounts
+  - **Security Posture**: LAPS coverage %, Kerberoastable admins, AS-REP roastable users, unconstrained delegation, DCSync non-admin status
+  - **GPO Security**: GPOs on DC OU, non-admin GPO control, interesting GPO names
+  - **Session Hygiene**: Tier Zero sessions on non-T0 hosts, Domain Admin sessions on workstations
+  - **Key Findings**: Severity breakdown (CRITICAL/HIGH/MEDIUM/LOW counts)
+  - **Recommended Next Steps**: Prioritized attack commands with real target data:
+    - Lists actual target names (DCSync principals, vulnerable templates, Kerberoastable users, etc.)
+    - Commands pre-filled with domain name and DC hostname
+    - Up to 5 targets shown per category with "+N more" overflow
+  - Only shown for table output (suppressed for `--json`, `--csv`, `--html`)
+  - Always displays, even in quiet mode (`-q`)
+  - Sections are conditional (only display when relevant data exists)
+  - Linux-first tooling: Impacket (secretsdump, GetUserSPNs, GetNPUsers), Certipy, nxc
+
+- **BloodHound CE API Endpoints**:
+  - `get_asset_groups()` - Retrieve asset groups from BloodHound CE
+  - `get_data_quality_stats()` - Retrieve data quality statistics (graceful fallback for older versions)
+
+## [2.2.0] - 2026-01-04
+
+### Added
+
+- **`--abuse` Flag**: Re-implemented abuse command display with simplified, Linux-first approach:
+  - Shows context-aware exploitation commands alongside query findings
+  - Only displays when `--abuse` flag is passed (explicit opt-in)
+  - Target-type aware: Different commands for User vs Group vs Computer vs Domain
+  - Linux-first tooling: Impacket, Certipy, bloodyAD, CrackMapExec
+  - Static placeholders (`<DC_IP>`, `<TARGET>`, `<USERNAME>`, etc.) - no config files needed
+  - OPSEC notes with Event IDs and detection considerations
+  - 5 YAML template files covering:
+    - ACL abuse (GenericAll, WriteDacl, AddMember, ForceChangePassword, etc.)
+    - Credential attacks (Kerberoasting, AS-REP, DCSync, LAPS, gMSA)
+    - ADCS attacks (ESC1-ESC11, GoldenCert)
+    - Delegation attacks (Unconstrained, Constrained, RBCD)
+    - Lateral movement (AdminTo, RDP, WinRM, DCOM)
+  - Example: `hackles -p 'pass' --acl --abuse`
+
+## [2.1.1] - 2026-01-04
+
+### Fixed
+
+- **Domain Controller detection**: Fixed DC detection in 8 queries that incorrectly used `objectid ENDS WITH '-516'` on computers. The `-516` RID belongs to the Domain Controllers **group**, not individual computer SIDs. Now correctly uses group membership pattern: `MATCH (c:Computer)-[:MemberOf*1..]->(g:Group) WHERE g.objectid ENDS WITH '-516'`
+  - Affected: `domain_stats.py`, `computer_delegation.py`, `unconstrained_krbtgt_paths.py`, `delegation_chains.py`, `main.py` (stats and --unconstrained filter)
+
+- **Print Spooler counting**: Fixed spooler detection counting "Unknown" status as enabled. Changed `if r.get("spooler_enabled")` to `if r.get("spooler_enabled") is True` to only count explicit True values
+
+- **Null node name handling**: Fixed `TypeError: argument of type 'NoneType' is not iterable` crash when path nodes have null names. Now displays "Unknown" instead of crashing
+
+- **Owned marker spacing**: Fixed `[!]` marker touching usernames (was `[!]E.HILLS`, now `[!] E.HILLS`)
+
+- **Null name filtering**: Added `AND g.name IS NOT NULL` filter to Domain Users queries to exclude corrupted nodes with null names from results
+  - Affected: `domain_users_to_highvalue.py`, `domain_users_dangerous_acls.py`
+
+### Changed
+
+- **Code cleanup**: Removed unused variables (`perm_findings`, `esc_findings`) and fixed bare `except` clause to catch specific exceptions (`ValueError`, `OSError`, `OverflowError`)
+
+## [2.1.0] - 2026-01-04
+
+### Removed
+
+- **Abuse Commands Functionality**: Removed all `--abuse` command functionality and attack templates:
+  - Removed `--abuse` CLI flag for displaying attack commands
+  - Removed `--abuse-var` and `--abuse-config` CLI arguments
+  - Removed `hackles/abuse/` directory with 58 YAML attack templates
+  - Removed abuse command display from `--investigate` output
+  - Removed `~/.hackles/abuse.conf` auto-loading
+  - Vulnerability findings now include clear impact descriptions in warnings instead of executable commands
+
+### Changed
+
+- Query output now focuses on vulnerability impact descriptions explaining what each misconfiguration allows (e.g., "Can request certificates as ANY domain user including Domain Admins") rather than providing attack commands
+
 ## [2.0.0] - 2026-01-03
 
 ### Added
@@ -97,7 +178,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Group investigation**: Properties, members (with Admin column), parent groups, inbound control edges
   - Supports wildcards for triage: `--investigate '*.DOMAIN.COM'` shows summary table sorted by attack relevance
   - Critical attack edges (GenericAll, WriteDacl, etc.) highlighted in red
-  - Works with `--abuse` flag to show exploitation commands for each outbound attack edge
 
 - **Wildcard support for node operations**: All node operation commands now support `*` wildcards for pattern matching:
   - `--info '*.DOMAIN.COM'` - Get info for multiple nodes matching pattern
@@ -166,18 +246,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **User Input Enhancement Features**:
   - `--from-owned PRINCIPAL`: Filter owned queries to analyze paths from a specific owned principal only (11 owned queries updated)
-  - `--abuse-var KEY=VALUE`: Pre-fill abuse template placeholders (e.g., `--abuse-var DC_IP=192.168.1.10`)
-  - `--abuse-config FILE`: Load abuse variables from config file (KEY=VALUE format)
-  - Auto-loads `~/.hackles/abuse.conf` if it exists
   - `--stale-days N`: Customize stale account threshold (default: 90 days) - affects stale accounts and computer stale password queries
   - `--max-path-depth N`: Maximum hops in path queries (default: 5) - affects 15 path-finding queries
   - `--max-paths N`: Maximum paths to return from queries (default: 25) - affects 15 path-finding queries
-
-- **9 abuse template wirings** added to previously uncovered queries:
-  - ESC8, ESC11, ESC15 ADCS queries now call their abuse templates
-  - ESC2/ESC3 any_purpose_templates.py now calls ADCSESC2
-  - manage_ca.py now calls ADCSESC7
-  - WriteAccountRestrictions, GPO Interesting Names, Plaintext userPassword queries
 
 - Comprehensive test suite for config singleton and utils module (77 tests total)
 
@@ -188,12 +259,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Domain Functional Level query**: Fixed type comparison error when BloodHound returns level as string (e.g., "2016") instead of integer
 - **RODC Allowed Replication query**: Fixed Cypher syntax error with ORDER BY after RETURN DISTINCT
 - **Delegation Chains query**: Fixed Cypher syntax error - ORDER BY now uses aliased column names after RETURN DISTINCT
-- **Abuse template "Ready-to-Paste" section**: No longer shows empty header when context cannot fill command placeholders
-- **Abuse template placeholder substitution** - Enhanced Ready-to-Paste command generation:
-  - `<GROUP>` placeholder now correctly fills when target is a Group (e.g., `net rpc group addmem 'DOMAIN ADMINS'`)
-  - `<TARGET$>` placeholder now adds `$` suffix for computer account targets (RBCD attacks)
-  - `<TARGET>` placeholder now fills for lateral movement commands (WinRM, RDP, PSRemote) from computer field
-  - `<PASSWORD>` and `<YOUR_PASSWORD>` are now synced as aliases - providing either via `--abuse-var` fills both
 
 ### Improved
 
@@ -224,16 +289,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     ```
   - Affected queries: Owned->High Value, Owned->DA, Owned->ADCS, Owned->Unconstrained, Owned->Kerberoastable, Owned->DCSync, Kerberoastable->DA, AS-REP->DA, Domain Users->High Value
 
-- **Abuse Templates Enhanced** with BloodHound.py and OPSEC notes:
-  - Kerberoasting: Added bloodhound.py collection, `/nowrap` flag for Rubeus, OPSEC for TGS requests (event 4769)
-  - DCSync: Added bloodhound.py DCOnly, OPSEC for replication events (4662)
-  - ASREPRoasting: Added bloodhound.py, OPSEC for AS-REP (event 4768)
-  - GoldenCert: Added Certipy backup, OPSEC for CA compromise
-  - GenericAll: Added shadow credentials, PowerView, OPSEC for modifications
-  - GenericWrite: Added PowerView `Set-DomainObject` method, cleanup commands to remove fake SPNs, OPSEC notes
-  - ReadLAPSPassword: Updated to use NetExec (nxc) as primary tool, added usage example with retrieved password
-  - ADCSESC8: Added `certipy relay` as simpler alternative to ntlmrelayx
-
 ### Changed
 
 - Removed internal development files from repository (CODE_REVIEW.md, QUERY_GAP_ANALYSIS.md, debug files)
@@ -259,7 +314,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Security Hygiene
 - Multiple output formats: table, JSON, CSV, HTML reports
 - Severity-based filtering (CRITICAL, HIGH, MEDIUM, LOW, INFO)
-- Abuse command templates with 58 YAML-based attack guides
 - Owned principal management and highlighting
 - Tier Zero asset management
 - Path finding (shortest path, path to DA, path to DC)
@@ -279,7 +333,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment variable support for credentials
 - No hardcoded sensitive values
 
-[Unreleased]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.1.1...v2.2.0
+[2.1.1]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.1.0...v2.1.1
+[2.1.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.3.0...v2.0.0
 [0.3.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Real-Fruit-Snacks/hackles/compare/v0.1.0...v0.2.0

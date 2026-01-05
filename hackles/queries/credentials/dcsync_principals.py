@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hackles.abuse.printer import print_abuse_info
 from hackles.core.cypher import node_type
-from hackles.core.utils import extract_domain
 from hackles.display.colors import Severity
 from hackles.display.tables import print_header, print_subheader, print_table, print_warning
 from hackles.queries.base import register_query
@@ -27,9 +25,9 @@ def get_dcsync_principals(
 
     query = f"""
     MATCH (n)-[r:DCSync|GetChanges|GetChangesAll]->(d:Domain)
-    {domain_filter.replace('AND', 'WHERE') if domain else ''}
+    {domain_filter.replace("AND", "WHERE") if domain else ""}
     WITH n, d, collect(type(r)) AS rights
-    RETURN n.name AS principal, {node_type('n')} AS type,
+    RETURN n.name AS principal, {node_type("n")} AS type,
            d.name AS domain,
            'DCSync' IN rights OR ('GetChanges' IN rights AND 'GetChangesAll' IN rights) AS can_dcsync,
            'GetChanges' IN rights AS has_getchanges,
@@ -77,14 +75,5 @@ def get_dcsync_principals(
                 for r in results
             ],
         )
-
-        # Only show abuse for full DCSync
-        dcsync_results = [r for r in results if r["can_dcsync"]]
-        if dcsync_results:
-            print_abuse_info(
-                "DCSync",
-                [{"principal": r["principal"]} for r in dcsync_results],
-                extract_domain(results, domain),
-            )
 
     return result_count
